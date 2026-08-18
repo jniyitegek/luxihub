@@ -164,6 +164,34 @@ export interface TrainingCourseDto {
   image: string;
 }
 
+export interface LeaderboardHighlightDto {
+  quote: string;
+  reviewerName: string;
+  rating: number;
+  createdAt: string;
+  isRealReview: boolean;
+}
+
+export interface LeaderboardEntryDto {
+  id: string;
+  slug: string;
+  name: string;
+  type: BusinessType;
+  location: RwandanRegion;
+  image: string;
+  certificationBadge: CertificationBadge;
+  ratingAvg: number;
+  reviewCount: number;
+  liveScore: number;
+  trend: 'rising' | 'steady';
+  highlight: LeaderboardHighlightDto;
+}
+
+export interface LeaderboardBoardsDto {
+  updatedAt: string;
+  boards: Record<'ALL' | 'HOTEL' | 'RESTAURANT' | 'TOUR', LeaderboardEntryDto[]>;
+}
+
 export type LoyaltyTier = 'EXPLORER' | 'CONNOISSEUR' | 'AMBASSADOR';
 
 export interface LoyaltyTransactionDto {

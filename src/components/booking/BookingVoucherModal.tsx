@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 import { X, Printer, Download, Sparkles, ShieldCheck, MapPin, Calendar, Users, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import { BookingDto } from '@/lib/types';
@@ -83,14 +84,13 @@ export function BookingVoucherModal({ booking, isOpen, onClose }: VoucherModalPr
           {/* Header & Logo */}
           <div className="flex items-start justify-between border-b border-slate-200 pb-6">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white font-bold shadow-md shadow-sky-500/25">
-                  LH
-                </div>
-                <span className="text-2xl font-black text-slate-900 tracking-wider">
-                  LUXE <span className="text-sky-600">HUB</span>
-                </span>
-              </div>
+              <Image
+                src="/logo/higa_logo_horizontal_blue.png"
+                alt="Higa Lux"
+                width={180}
+                height={60}
+                className="h-9 w-auto mb-1"
+              />
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                 Verified Rwandan Luxury Hospitality Voucher
               </p>

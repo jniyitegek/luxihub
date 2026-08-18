@@ -72,7 +72,7 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
           depositOnly,
           specialRequests,
           guestName: user?.name || 'Clarisse Mutoni',
-          guestEmail: user?.email || 'customer@luxehub.rw',
+          guestEmail: user?.email || 'customer@higalux.rw',
           guestPhone: user?.phone || '+250 788 123 456',
         }),
       });
@@ -230,7 +230,7 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               <span className="font-bold text-slate-800">{formatRwf(total)}</span>
             </div>
             <div className="flex justify-between text-emerald-700 font-bold">
-              <span>Luxe Hub Quality Assurance Audit</span>
+              <span>Higa Lux Quality Assurance Audit</span>
               <span>Included</span>
             </div>
             <div className="flex justify-between text-slate-900 font-extrabold text-sm pt-2 border-t border-slate-100">

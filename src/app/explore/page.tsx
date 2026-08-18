@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
+import { LiveLeaderboard } from '@/components/landing/LiveLeaderboard';
 import { formatRwf, formatUsd } from '@/lib/utils';
 
 function ExploreContent() {
@@ -97,8 +98,20 @@ function ExploreContent() {
 
       </div>
 
+      {/* Live Leaderboard: who guests are highlighting right now, by category */}
+      <LiveLeaderboard variant="section" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        
+
+        <div className="pt-2">
+          <Text as="h2" variant="h2" color="dark" className="text-2xl sm:text-3xl">
+            Browse All Verified Listings
+          </Text>
+          <Text variant="caption" color="muted" className="mt-1">
+            Filter and compare every certified property, restaurant, and tour on the platform.
+          </Text>
+        </div>
+
         {/* Filter Control Bar */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-5">
           

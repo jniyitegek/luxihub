@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  GraduationCap, 
-  Award, 
+  Award,
   BookOpen, 
   Users, 
   CheckCircle2, 
@@ -88,10 +87,6 @@ export default function HospitalityAcademyPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
         <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-sky-900 border border-sky-200 text-xs font-bold uppercase tracking-wider">
-            <GraduationCap className="w-3.5 h-3.5 text-sky-600" />
-            RDB Accredited Training Hub
-          </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
             Rwandan Hospitality <span className="text-sky-600">Academy</span>
           </h1>
@@ -105,7 +100,7 @@ export default function HospitalityAcademyPage() {
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>Impacts QA Audit Score</span>
           </div>
-          <p className="text-[11px] text-slate-600 font-normal">Certified staff adds up to +15 points on your official Luxe Hub audit.</p>
+          <p className="text-[11px] text-slate-600 font-normal">Certified staff adds up to +15 points on your official Higa Lux audit.</p>
         </div>
       </div>
 

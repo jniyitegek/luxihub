@@ -137,9 +137,14 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
             {/* FAR LEFT: Logo */}
             <Link href="/" className="flex items-center gap-2.5 shrink-0">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                LUXE<span className="text-sky-400">HUB</span>
-              </span>
+              <Image
+                src="/logo/higa_logo_horizontal_white.png"
+                alt="Higa Lux"
+                width={168}
+                height={56}
+                priority
+                className="h-7 sm:h-8 lg:h-24 w-auto"
+              />
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -371,8 +376,8 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
         )}
       </header>
 
-      {/* Spacer to push content below the fixed navbar */}
-      <div className={`${isHomePage ? '' : (scrolled ? 'h-[60px]' : 'h-[76px]')} transition-all duration-500`} />
+      {/* Spacer to push content below the fixed navbar (taller on lg+ to match the larger desktop logo) */}
+      <div className={`${isHomePage ? '' : (scrolled ? 'h-[60px] lg:h-[120px]' : 'h-[76px] lg:h-[136px]')} transition-all duration-500`} />
 
       {/* MOBILE: Full-screen dark overlay */}
       {mobileMenuOpen && (
@@ -381,9 +386,13 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
           {/* Top: Logo + Close */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
-              <span className="text-2xl font-extrabold text-white tracking-tight">
-                LUXE<span className="text-sky-400">HUB</span>
-              </span>
+              <Image
+                src="/logo/higa_logo_horizontal_white.png"
+                alt="Higa Lux"
+                width={168}
+                height={56}
+                className="h-8 w-auto"
+              />
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </Link>
             <button

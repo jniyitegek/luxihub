@@ -33,7 +33,7 @@ export default function LoginPage() {
     setError('');
 
     // Default to customer demo if empty for fast testing
-    const targetEmail = email.trim() || 'customer@luxehub.rw';
+    const targetEmail = email.trim() || 'customer@higalux.rw';
 
     setLoading(true);
     try {
@@ -64,10 +64,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 font-sans">
       
-      {/* Centered Login Card using Luxe Hub Brand Colors */}
+      {/* Centered Login Card using Higa Lux Brand Colors */}
       <div className="w-full max-w-[420px] rounded-[36px] bg-gradient-to-b from-sky-600 via-sky-700 to-sky-800 shadow-2xl shadow-sky-900/30 overflow-hidden flex flex-col transition-all duration-300">
-        
-        {/* TOP SECTION: Luxe Hub Sky Blue Brand Gradient */}
+
+        {/* TOP SECTION: Higa Lux Sky Blue Brand Gradient */}
         <div className="p-8 sm:p-9 space-y-7 relative">
           
           {/* Top Bar: Back Arrow Left & Logo Icon Right */}
@@ -158,7 +158,7 @@ export default function LoginPage() {
             <Button
               type="button"
               size="sm"
-              onClick={() => handleQuickFill('admin@luxehub.rw')}
+              onClick={() => handleQuickFill('admin@higalux.rw')}
               className="!px-2.5 !py-0.5 !text-[11px] rounded-full bg-white/20 hover:bg-white/30 text-white border-none shadow-none"
             >
               Admin
@@ -174,7 +174,7 @@ export default function LoginPage() {
             <Button
               type="button"
               size="sm"
-              onClick={() => handleQuickFill('customer@luxehub.rw')}
+              onClick={() => handleQuickFill('customer@higalux.rw')}
               className="!px-2.5 !py-0.5 !text-[11px] rounded-full bg-white/20 hover:bg-white/30 text-white border-none shadow-none"
             >
               Guest
@@ -207,7 +207,7 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <button
               type="button"
-              onClick={() => handleQuickFill('customer@luxehub.rw')}
+              onClick={() => handleQuickFill('customer@higalux.rw')}
               className="font-extrabold text-sky-600 hover:text-sky-700 hover:underline"
             >
               Sign Up Now

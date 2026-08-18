@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         auditorName: user.name,
         score: numericScore,
         badgeGranted,
-        notes: notes || 'Official Rwandan Luxe Hub Quality Assurance audit completed.',
+        notes: notes || 'Official Rwandan Higa Lux Quality Assurance audit completed.',
         inspectionItems: JSON.stringify(inspectionItems || []),
         auditDate: new Date(),
       },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, ShieldCheck, CheckCircle2, MessageSquare, Quote } from 'lucide-react';
+import { Star, CheckCircle2, MessageSquare, Quote } from 'lucide-react';
 import Image from 'next/image';
 
 export function TestimonialsSection() {
@@ -61,15 +61,11 @@ export function TestimonialsSection() {
     <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
       
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          Authentic Guest Transparency
-        </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
           Verified Reviews from <span className="text-sky-600">Real Travelers</span>
         </h2>
         <p className="text-sm text-slate-600 font-normal">
-          Only guests who booked and completed their stay through Luxe Hub can submit ratings.
+          Only guests who booked and completed their stay through Higa Lux can submit ratings.
         </p>
       </div>
 

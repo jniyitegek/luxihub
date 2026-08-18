@@ -90,7 +90,7 @@ export function SupportTicketModal({ isOpen, onClose }: SupportModalProps) {
     <Modal
       open={isOpen}
       onClose={onClose}
-      title="Luxe Hub 24/7 VIP Concierge"
+      title="Higa Lux 24/7 VIP Concierge"
       subtitle="Direct assistance, helicopter charters & quality assurance"
       size="lg"
     >

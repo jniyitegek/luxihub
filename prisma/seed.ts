@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Luxe Hub database seeding with Rwandan luxury hospitality dataset...');
+  console.log('🌱 Starting Higa Lux database seeding with Rwandan luxury hospitality dataset...');
 
   // 1. Clean existing records
   await prisma.review.deleteMany();
@@ -24,7 +24,7 @@ async function main() {
   // 2. Create Users
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@luxehub.rw',
+      email: 'admin@higalux.rw',
       passwordHash,
       name: 'Dr. Vanessa Uwase',
       role: 'ADMIN',
@@ -57,7 +57,7 @@ async function main() {
 
   const customer1 = await prisma.user.create({
     data: {
-      email: 'customer@luxehub.rw',
+      email: 'customer@higalux.rw',
       passwordHash,
       name: 'Clarisse Mutoni',
       role: 'CUSTOMER',
@@ -338,7 +338,7 @@ async function main() {
       reviewCount: 78,
       isFeatured: true,
       phone: '+250 782 000 007',
-      email: 'expeditions@luxehub.rw',
+      email: 'expeditions@higalux.rw',
       responseRate: 100,
     },
   });
@@ -517,7 +517,7 @@ async function main() {
       paymentStatus: 'FULLY_PAID',
       specialRequests: 'Celebrating 5th anniversary. Would appreciate flower arrangement in villa upon arrival.',
       guestName: 'Clarisse Mutoni',
-      guestEmail: 'customer@luxehub.rw',
+      guestEmail: 'customer@higalux.rw',
       guestPhone: '+250 788 123 456',
     },
   });
@@ -554,7 +554,7 @@ async function main() {
       paymentStatus: 'FULLY_PAID',
       specialRequests: 'Airport pickup requested at 8:00 PM.',
       guestName: 'Clarisse Mutoni',
-      guestEmail: 'customer@luxehub.rw',
+      guestEmail: 'customer@higalux.rw',
       guestPhone: '+250 788 123 456',
     },
   });
@@ -688,7 +688,7 @@ async function main() {
       perks: JSON.stringify([
         'Gold Standard Certification Badge',
         'Homepage Hero Carousel Placement',
-        'Zero Commission on Direct Luxe Hub Bookings',
+        'Zero Commission on Direct Higa Lux Bookings',
         'Quarterly In-Person QA Audit & Staff Training Pass',
         'Dedicated VIP Concierge Priority Routing'
       ]),
@@ -702,12 +702,12 @@ async function main() {
       userId: customer1.id,
       subject: 'Helicopter transfer inquiry from Kigali to Bisate Lodge',
       category: 'VIP_CONCIERGE',
-      message: 'Hello Luxe Hub Concierge, could you arrange an Akagera Aviation direct helicopter transfer from Kigali International Airport to Bisate Lodge for our arrival on August 15?',
+      message: 'Hello Higa Lux Concierge, could you arrange an Akagera Aviation direct helicopter transfer from Kigali International Airport to Bisate Lodge for our arrival on August 15?',
       status: 'IN_PROGRESS',
       priority: 'VIP',
       responses: JSON.stringify([
         {
-          senderName: 'Luxe Hub VIP Concierge',
+          senderName: 'Higa Lux VIP Concierge',
           senderRole: 'ADMIN',
           message: 'Muraho Clarisse, we have coordinated with Akagera Aviation. The private Airbus H125 helicopter flight is pre-booked for 2:30 PM departure from Kigali. We will send the flight manifest confirmation shortly.',
           timestamp: '2026-08-04T10:30:00Z',
@@ -716,7 +716,7 @@ async function main() {
     },
   });
 
-  console.log('🎉 Luxe Hub database seeding completed successfully!');
+  console.log('🎉 Higa Lux database seeding completed successfully!');
 }
 
 main()

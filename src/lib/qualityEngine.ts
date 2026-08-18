@@ -92,7 +92,7 @@ export function evaluateBusinessQuality(params: {
   if (overallScore >= 92 && reviewCount >= 3 && responseRate >= 95) {
     recommendedBadge = 'GOLD_STANDARD';
     keyInsights.push('Meets highest echelon Rwandan luxury standards with exemplary guest satisfaction.');
-    keyInsights.push('Recommended for Luxe Hub Hero Spotlight and VIP Concierge Priority.');
+    keyInsights.push('Recommended for Higa Lux Hero Spotlight and VIP Concierge Priority.');
   } else if (overallScore >= 80) {
     recommendedBadge = 'LUXE_VERIFIED';
     keyInsights.push('Passed verified 40-point inspection and complies with verified booking standards.');

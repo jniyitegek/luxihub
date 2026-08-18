@@ -1,17 +1,19 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HeroSection } from '@/components/landing/HeroSection';
+import { LiveLeaderboard } from '@/components/landing/LiveLeaderboard';
+import { SearchWidget } from '@/components/landing/SearchWidget';
 import { WhyLuxeHub } from '@/components/landing/WhyLuxeHub';
 import { FeaturedCarousel } from '@/components/landing/FeaturedCarousel';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
-import { 
-  Sparkles, 
-  MapPin, 
-  ShieldCheck, 
-  ArrowRight, 
-  Building2, 
-  GraduationCap, 
+import { Text } from '@/components/ui/Text';
+import {
+  Sparkles,
+  MapPin,
+  ShieldCheck,
+  ArrowRight,
+  Building2,
+  GraduationCap,
   Award,
   Compass
 } from 'lucide-react';
@@ -51,10 +53,20 @@ export default function HomePage() {
   return (
     <div className="w-full space-y-0 pb-0">
       
-      {/* 1. Hero Section & Search Engine */}
-      <HeroSection />
+      {/* 1. Hero: The Live Leaderboard — who guests are highlighting right now */}
+      <LiveLeaderboard variant="hero" />
 
-      {/* 2. Why Luxe Hub Quality Assurance */}
+      {/* 1b. Extras: booking & direct search, secondary to the leaderboard */}
+      <section className="w-full bg-[#0B1B36] pt-2 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center space-y-4 mb-6">
+          <Text variant="h3" color="white">
+            Ready to book directly? Search verified stays in seconds.
+          </Text>
+        </div>
+        <SearchWidget />
+      </section>
+
+      {/* 2. Why Higa Lux Quality Assurance */}
       <WhyLuxeHub />
 
       {/* 3. Featured Certified Partners */}
@@ -144,7 +156,7 @@ export default function HomePage() {
           <div className="space-y-4 max-w-2xl">
             <h3 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
               Get Certified with the <br />
-              <span className="text-sky-400 italic">Luxe Hub Quality Mark</span>
+              <span className="text-sky-400 italic">Higa Lux Quality Mark</span>
             </h3>
             <p className="text-sm sm:text-base text-white/60 leading-relaxed font-normal">
               Join Rwanda&apos;s most prestigious network of 5-star hospitality providers. Receive professional 40-point audits, staff masterclasses at the Hospitality Academy, and direct verified booking escrow.

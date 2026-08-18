@@ -16,7 +16,7 @@ export function WhyLuxeHub() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <Text variant="h2" color="dark">
-            Why Book with <span className="text-sky-600">Luxe Hub?</span>
+            Why Book with <span className="text-sky-600">Higa Lux?</span>
           </Text>
           <Text variant="body" color="muted" className="leading-relaxed">
             We bridge the gap between discerning travelers and Rwandan luxury hospitality with uncompromised on-the-ground verification and verified guest transparency.
@@ -72,7 +72,7 @@ export function WhyLuxeHub() {
         <div className="p-8 sm:p-12 rounded-[32px] bg-white border border-slate-200 shadow-xl space-y-8">
           <div className="max-w-3xl">
             <Text variant="h2" color="dark">
-              The Luxe Hub Certification Hierarchy
+              The Higa Lux Certification Hierarchy
             </Text>
             <Text variant="body" color="muted" className="mt-1">
               Our dynamic badge algorithm continuously updates venue statuses based on live audits and traveler satisfaction scores.

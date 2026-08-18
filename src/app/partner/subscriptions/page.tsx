@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Award, CheckCircle2, Megaphone } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { formatRwf } from '@/lib/utils';
 import { SubscriptionTier } from '@/lib/types';
 import { Text } from '@/components/ui/Text';
@@ -172,10 +172,6 @@ export default function PartnerSubscriptionsPage() {
 
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-sky-900 border border-sky-200 text-xs font-bold uppercase tracking-wider">
-          <Award className="w-3.5 h-3.5 text-sky-600" />
-          Partner Growth & Accreditation
-        </div>
         <Text variant="h1" color="dark">
           Partner Membership <span className="text-sky-600">Tiers</span>
         </Text>
@@ -258,10 +254,6 @@ export default function PartnerSubscriptionsPage() {
       {/* Advanced Visibility Tools */}
       <div className="max-w-4xl mx-auto space-y-5">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold uppercase tracking-wider">
-            <Megaphone className="w-3.5 h-3.5 text-amber-600" />
-            Advanced Visibility Tools
-          </div>
           <Text variant="h2" color="dark" className="text-2xl">Boost Your Homepage Placement</Text>
           <Text variant="body" color="muted">
             {isFeatured && featuredUntil

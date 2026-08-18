@@ -15,7 +15,7 @@ export function CertificationBadge({ badge, size = 'md', showLabel = true }: Bad
         className={`inline-flex items-center gap-1.5 font-bold text-sky-950 bg-gradient-to-r from-sky-100 via-sky-200 to-blue-200 border border-sky-300 shadow-sm rounded-full ${
           size === 'sm' ? 'px-2.5 py-0.5 text-xs' : size === 'lg' ? 'px-4 py-1.5 text-sm' : 'px-3 py-1 text-xs'
         }`}
-        title="Luxe Hub Gold Standard: 95%+ QA Audit & Top Verified Reviews"
+        title="Higa Lux Gold Standard: 95%+ QA Audit & Top Verified Reviews"
       >
         <Award className={size === 'sm' ? 'w-3.5 h-3.5 text-sky-700' : size === 'lg' ? 'w-4 h-4 text-sky-700' : 'w-3.5 h-3.5 text-sky-700'} />
         {showLabel && <span>Gold Standard Certified</span>}

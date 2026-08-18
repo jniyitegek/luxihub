@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { UserSession, UserRole } from './types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'luxe-hub-rwanda-secret-key-2026-quality-assured';
+const JWT_SECRET = process.env.JWT_SECRET || 'higa-lux-rwanda-secret-key-2026-quality-assured';
 const TOKEN_COOKIE_NAME = 'lux_token';
 
 export function signToken(user: UserSession): string {
@@ -37,7 +37,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
 
 export const DEMO_ACCOUNTS = {
   customer: {
-    email: 'customer@luxehub.rw',
+    email: 'customer@higalux.rw',
     password: 'password123',
     role: 'CUSTOMER' as UserRole,
     name: 'Clarisse Mutoni',
@@ -53,7 +53,7 @@ export const DEMO_ACCOUNTS = {
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
   },
   admin: {
-    email: 'admin@luxehub.rw',
+    email: 'admin@higalux.rw',
     password: 'password123',
     role: 'ADMIN' as UserRole,
     name: 'Dr. Vanessa Uwase (Chief QA Officer)',

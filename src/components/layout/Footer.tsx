@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, ShieldCheck, Phone, Mail, MapPin, Award, CheckCircle, HeartHandshake } from 'lucide-react';
+import Image from 'next/image';
+import { ShieldCheck, Phone, Mail, MapPin, Award, CheckCircle, HeartHandshake } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -50,14 +51,13 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12">
           
           <div className="md:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-sky-600 to-blue-600 flex items-center justify-center shadow-md">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-black text-white tracking-wider">
-                LUXE <span className="text-sky-400">HUB</span>
-              </span>
-            </div>
+            <Image
+              src="/logo/higa_logo_horizontal_white.png"
+              alt="Higa Lux"
+              width={180}
+              height={60}
+              className="h-9 w-auto"
+            />
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm font-normal">
               The premier quality assurance and verified booking platform for Rwanda&apos;s luxury lodges, fine dining institutions, and bespoke safari expeditions.
             </p>
@@ -72,7 +72,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2 text-slate-300">
                 <Mail className="w-4 h-4 text-sky-400" />
-                <span>concierge@luxehub.rw</span>
+                <span>concierge@higalux.rw</span>
               </div>
             </div>
           </div>
@@ -114,7 +114,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
           <div>
-            &copy; {new Date().getFullYear()} Luxe Hub Rwanda. All rights reserved. Registered Quality Assurance Provider.
+            &copy; {new Date().getFullYear()} Higa Lux Rwanda. All rights reserved. Registered Quality Assurance Provider.
           </div>
           <div className="flex items-center gap-6">
             <span className="text-slate-400 font-medium">In Alignment with Rwanda Development Board (RDB) Standards</span>

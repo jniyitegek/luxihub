@@ -4,7 +4,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import ClientLayoutWrapper from './ClientLayoutWrapper';
 
 export const metadata: Metadata = {
-  title: 'Luxe Hub Rwanda | Verified Luxury Hospitality, Lodges & Safari Booking',
+  title: 'Higa Lux Rwanda | Verified Luxury Hospitality, Lodges & Safari Booking',
   description: 'Rwanda\'s official quality-assured platform for booking 5-star eco-lodges, Volcanoes gorilla trekking safaris, and fine dining with 40-point inspection guarantees and instant MTN MoMo payments.',
   keywords: [
     'Rwanda Luxury Hotels',
@@ -17,10 +17,10 @@ export const metadata: Metadata = {
     'MTN MoMo Hotel Booking Rwanda',
   ],
   openGraph: {
-    title: 'Luxe Hub Rwanda | Quality Assured Luxury Hospitality',
+    title: 'Higa Lux Rwanda | Quality Assured Luxury Hospitality',
     description: 'Experience the Land of a Thousand Hills in uncompromised luxury with verified booking guarantees.',
-    url: 'https://luxehub.rw',
-    siteName: 'Luxe Hub Rwanda',
+    url: 'https://higalux.rw',
+    siteName: 'Higa Lux Rwanda',
     locale: 'en_US',
     type: 'website',
   },
