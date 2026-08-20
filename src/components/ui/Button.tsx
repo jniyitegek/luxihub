@@ -33,7 +33,7 @@ export function Button({
 
   const variants = {
     primary: 'bg-sky-600 hover:bg-sky-500 text-white rounded-full shadow-lg shadow-sky-500/25 hover:shadow-xl hover:shadow-sky-500/35 border border-sky-400/30',
-    orange: 'bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/35 border border-amber-300/30',
+    orange: 'bg-slate-950 hover:bg-slate-800 text-white rounded-full shadow-lg shadow-slate-950/25 hover:shadow-xl hover:shadow-slate-950/35 border border-slate-800',
     secondary: 'bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-full border border-sky-200 shadow-sm',
     outline: 'bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 rounded-full shadow-sm',
     dark: 'bg-slate-950 hover:bg-slate-800 text-white rounded-full shadow-xl border border-slate-800',

@@ -79,7 +79,7 @@ export default function CustomerBookingsPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-              My Luxury <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-amber-200">Reservations</span>
+              My Luxury <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Reservations</span>
             </Text>
             <Text variant="caption" className="text-xs sm:text-sm text-sky-100/90 font-medium">
               Manage your verified Rwandan bookings, download QR vouchers, and write verified reviews.
@@ -103,10 +103,10 @@ export default function CustomerBookingsPage() {
           <Card
             variant="compact"
             title=""
-            className="!rounded-3xl border-amber-200 bg-gradient-to-r from-amber-50 to-white shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="!rounded-3xl border-sky-200 bg-gradient-to-r from-sky-50 to-white shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-sky-100 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
                 <Gem className="w-5 h-5" />
               </div>
               <div>
@@ -119,7 +119,7 @@ export default function CustomerBookingsPage() {
                 </Text>
               </div>
             </div>
-            <Badge variant="accent" className="!rounded-full">Earn 1 pt / 1,000 RWF spent</Badge>
+            <Badge variant="accent">Earn 1 pt / 1,000 RWF spent</Badge>
           </Card>
         )}
 
@@ -162,12 +162,12 @@ export default function CustomerBookingsPage() {
 
                     <Badge
                       variant="status"
-                      className={`!rounded-full text-[10px] ${
+                      className={`text-[10px] ${
                         b.status === 'CONFIRMED'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          ? 'text-sky-700'
                           : b.status === 'COMPLETED'
-                            ? 'bg-sky-50 text-sky-800 border-sky-200'
-                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                            ? 'text-slate-900'
+                            : 'text-slate-500'
                       }`}
                     >
                       {b.status}
@@ -175,12 +175,12 @@ export default function CustomerBookingsPage() {
 
                     <Badge
                       variant="status"
-                      className={`!rounded-full text-[10px] border-none ${
+                      className={`text-[10px] ${
                         b.paymentStatus === 'FULLY_PAID'
-                          ? 'bg-emerald-50 text-emerald-800'
+                          ? 'text-sky-700'
                           : b.paymentStatus === 'DEPOSIT_PAID'
-                            ? 'bg-amber-50 text-amber-800'
-                            : 'bg-red-50 text-red-800'
+                            ? 'text-slate-500'
+                            : 'text-red-700'
                       }`}
                     >
                       {b.paymentStatus.replace('_', ' ')}
@@ -251,16 +251,16 @@ export default function CustomerBookingsPage() {
                         variant="outline"
                         size="sm"
                         fullWidth
-                        leftIcon={<Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                        className="!rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 shadow-none"
+                        leftIcon={<Star className="w-3.5 h-3.5 text-sky-600 fill-sky-500" />}
+                        className="!rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-200 shadow-none"
                       >
                         Write Review
                       </Button>
                     )}
 
                     {b.review && (
-                      <div className="text-center text-[10px] text-emerald-700 flex items-center justify-center gap-1 font-bold">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="text-center text-[10px] text-sky-700 flex items-center justify-center gap-1 font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />
                         <span>Verified Review Submitted</span>
                       </div>
                     )}

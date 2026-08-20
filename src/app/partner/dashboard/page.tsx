@@ -146,7 +146,7 @@ export default function PartnerDashboardPage() {
               href="/partner/subscriptions"
               className="px-5 py-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-md"
             >
-              <Award className="w-4 h-4 text-amber-400" />
+              <Award className="w-4 h-4 text-sky-400" />
               <span>Membership Tier</span>
             </Link>
 
@@ -178,7 +178,7 @@ export default function PartnerDashboardPage() {
               {revenueTrendPct === null ? (
                 <span className="text-slate-500">No prior month to compare</span>
               ) : (
-                <span className={revenueTrendPct >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                <span className={revenueTrendPct >= 0 ? 'text-sky-700' : 'text-red-600'}>
                   {revenueTrendPct >= 0 ? '+' : ''}
                   {revenueTrendPct.toFixed(1)}% vs last month
                 </span>
@@ -189,9 +189,9 @@ export default function PartnerDashboardPage() {
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
             <div className="flex items-center justify-between text-slate-500 text-xs font-extrabold">
               <span>QA Audit Score</span>
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-sky-600" />
             </div>
-            <div className="text-3xl font-extrabold text-emerald-700">
+            <div className="text-3xl font-extrabold text-slate-900">
               {business?.qualityScore != null ? `${business.qualityScore}%` : 'Pending'}
             </div>
             <div className="text-[11px] text-slate-500 font-medium">
@@ -202,7 +202,7 @@ export default function PartnerDashboardPage() {
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
             <div className="flex items-center justify-between text-slate-500 text-xs font-extrabold">
               <span>Verified Guest Rating</span>
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <Star className="w-4 h-4 text-sky-600 fill-sky-500" />
             </div>
             <div className="text-3xl font-extrabold text-slate-900">
               {business ? business.ratingAvg.toFixed(2) : '—'} <span className="text-xs font-normal text-slate-400">/ 5.0</span>
@@ -316,7 +316,7 @@ export default function PartnerDashboardPage() {
 
             <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-6 space-y-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-sky-600" />
                 <Text as="h3" variant="h4" color="dark" className="font-extrabold text-base">QA Recommendations</Text>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">

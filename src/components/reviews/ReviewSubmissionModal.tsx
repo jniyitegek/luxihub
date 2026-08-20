@@ -77,7 +77,7 @@ export function ReviewSubmissionModal({ booking, isOpen, onClose, onSuccess }: R
           >
             <Star
               className={`w-4 h-4 ${
-                star <= val ? 'fill-amber-500 text-amber-500' : 'text-slate-300'
+                star <= val ? 'fill-sky-500 text-sky-500' : 'text-slate-300'
               }`}
             />
           </button>

@@ -47,8 +47,8 @@ export function Text({
   const colorClasses = {
     default: 'text-slate-900',
     sky: 'text-sky-600',
-    amber: 'text-amber-600',
-    emerald: 'text-emerald-600',
+    amber: 'text-sky-600',
+    emerald: 'text-slate-900',
     muted: 'text-slate-500',
     white: 'text-white',
     dark: 'text-slate-950',

@@ -4,9 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Building2, UtensilsCrossed, Compass, Sparkles, Crown, TrendingUp, Minus, Quote } from 'lucide-react';
+import { Building2, UtensilsCrossed, Compass, Sparkles, Crown, TrendingUp, Minus, Quote, ShieldCheck } from 'lucide-react';
 import { Text } from '@/components/ui/Text';
-import { CertificationBadge } from '@/components/ui/CertificationBadge';
 import { LeaderboardBoardsDto, LeaderboardEntryDto } from '@/lib/types';
 
 const POLL_INTERVAL_MS = 45000;
@@ -181,10 +180,10 @@ function PodiumCard({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank:
         <Text variant="h4" color={isHero ? 'white' : 'dark'} className="line-clamp-1 group-hover:text-sky-400 transition-colors">
           {entry.name}
         </Text>
-        <div className={`text-lg font-extrabold ${isHero ? 'text-emerald-300' : 'text-emerald-600'}`}>{entry.liveScore}</div>
+        <div className={`text-lg font-extrabold ${isHero ? 'text-white' : 'text-slate-900'}`}>{entry.liveScore}</div>
         <div className={`flex items-center justify-center gap-1 ${isHero ? 'text-white/50' : 'text-slate-400'}`}>
           {entry.trend === 'rising' ? (
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
+            <TrendingUp className={`w-3 h-3 ${isHero ? 'text-white' : 'text-sky-600'}`} />
           ) : (
             <Minus className="w-3 h-3" />
           )}
@@ -205,14 +204,16 @@ function ListRow({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank: nu
       <div className="flex flex-col items-center gap-0.5 w-6 shrink-0">
         <span className={`text-sm font-extrabold ${isHero ? 'text-white/70' : 'text-slate-400'}`}>{rank}</span>
         {entry.trend === 'rising' ? (
-          <TrendingUp className="w-3 h-3 text-emerald-400" />
+          <TrendingUp className={`w-3 h-3 ${isHero ? 'text-white' : 'text-sky-600'}`} />
         ) : (
           <Minus className={`w-3 h-3 ${isHero ? 'text-white/30' : 'text-slate-300'}`} />
         )}
       </div>
 
-      <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden shrink-0 bg-slate-200">
-        <Image src={entry.image} alt={entry.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+      <div className="shrink-0" style={{ perspective: '500px' }}>
+        <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-slate-200 transition-transform duration-500 ease-out [@media(hover:hover)]:group-hover:[transform:rotateY(25deg)]">
+          <Image src={entry.image} alt={entry.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+        </div>
       </div>
 
       <div className="flex-1 min-w-0">
@@ -220,16 +221,16 @@ function ListRow({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank: nu
           <Text variant="h4" color={isHero ? 'white' : 'dark'} className="line-clamp-1 group-hover:text-sky-400 transition-colors">
             {entry.name}
           </Text>
-          <CertificationBadge badge={entry.certificationBadge} size="sm" showLabel={false} />
+          <ShieldCheck className={`w-4 h-4 shrink-0 ${isHero ? 'text-white' : 'text-sky-600'}`} />
         </div>
-        <div className={`flex items-center gap-1.5 text-[11px] italic ${isHero ? 'text-white/60' : 'text-slate-500'}`}>
+        <div className={`flex items-center gap-1.5 text-[11px] not-italic ${isHero ? 'text-white/60' : 'text-slate-500'}`}>
           <Quote className="w-3 h-3 shrink-0 opacity-60" />
           <span className="line-clamp-1">&ldquo;{entry.highlight.quote}&rdquo;</span>
         </div>
       </div>
 
       <div className="text-right shrink-0">
-        <div className={`text-lg font-extrabold ${isHero ? 'text-emerald-300' : 'text-emerald-600'}`}>{entry.liveScore}</div>
+        <div className={`text-lg font-extrabold ${isHero ? 'text-white' : 'text-slate-900'}`}>{entry.liveScore}</div>
         <div className={`text-[10px] font-semibold ${isHero ? 'text-white/50' : 'text-slate-400'}`}>
           {entry.ratingAvg.toFixed(1)}★ ({entry.reviewCount})
         </div>

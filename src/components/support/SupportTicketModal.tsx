@@ -123,8 +123,8 @@ export function SupportTicketModal({ isOpen, onClose }: SupportModalProps) {
         <div className="p-6 overflow-y-auto space-y-4">
           
           {successMsg && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in font-medium">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-sky-800 text-xs flex items-center gap-2 animate-in fade-in font-medium">
+              <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
@@ -217,8 +217,8 @@ export function SupportTicketModal({ isOpen, onClose }: SupportModalProps) {
                         </span>
                         <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{t.subject}</h4>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        t.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      <span className={`text-[10px] font-bold ${
+                        t.status === 'RESOLVED' ? 'text-sky-700' : 'text-slate-500'
                       }`}>
                         {t.status}
                       </span>

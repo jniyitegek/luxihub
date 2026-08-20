@@ -127,12 +127,12 @@ export default function AdminDashboardPage() {
         
         {/* Glowing Shapes */}
         <div className="absolute top-0 right-10 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-              Chief QA & Auditor <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-amber-200">Dashboard</span>
+              Chief QA & Auditor <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Dashboard</span>
             </Text>
             <Text variant="caption" className="text-xs sm:text-sm text-sky-100/90 font-medium">
               Logged in as {user?.name || 'Dr. Vanessa Uwase'} (RDB Senior Quality Inspector)
@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
               <Building2 className="w-4 h-4 text-sky-600" />
             </div>
             <div className="text-3xl font-extrabold text-slate-900">{businesses.length} Properties</div>
-            <div className="text-[11px] text-emerald-700 font-extrabold">
+            <div className="text-[11px] text-sky-700 font-extrabold">
               {auditedBusinesses.length} of {businesses.length} Audited
             </div>
           </Card>
@@ -166,9 +166,9 @@ export default function AdminDashboardPage() {
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
             <div className="flex items-center justify-between text-slate-500 text-xs font-extrabold">
               <span>Gold Standard Venues</span>
-              <Award className="w-4 h-4 text-emerald-600" />
+              <Award className="w-4 h-4 text-sky-600" />
             </div>
-            <div className="text-3xl font-extrabold text-emerald-700">
+            <div className="text-3xl font-extrabold text-slate-900">
               {businesses.filter((b) => b.certificationBadge === 'GOLD_STANDARD').length} Venues
             </div>
             <div className="text-[11px] text-slate-500 font-medium">&gt; 95% QA Benchmark</div>
@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
             <div className="flex items-center justify-between text-slate-500 text-xs font-extrabold">
               <span>Platform QA Average</span>
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <Star className="w-4 h-4 text-sky-600 fill-sky-500" />
             </div>
             <div className="text-3xl font-extrabold text-slate-900">
               {platformQaAverage !== null ? `${platformQaAverage.toFixed(1)}%` : '—'}
@@ -233,11 +233,11 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4">
                         <CertificationBadge badge={b.certificationBadge} size="sm" />
                       </td>
-                      <td className="px-6 py-4 font-mono font-extrabold text-emerald-700">
+                      <td className="px-6 py-4 font-mono font-extrabold text-sky-700">
                         {b.qualityScore != null ? `${b.qualityScore}%` : 'Pending'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-amber-600 font-bold">{b.ratingAvg.toFixed(2)}</span>
+                        <span className="text-slate-900 font-bold">{b.ratingAvg.toFixed(2)}</span>
                         <span className="text-slate-400 text-[10px] ml-1 font-medium">({b.reviewCount})</span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -299,11 +299,9 @@ export default function AdminDashboardPage() {
         {auditTarget && (
             auditSuccess ? (
               <div className="p-8 text-center space-y-4">
-                <div className="inline-block p-3 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
+                <CheckCircle2 className="w-8 h-8 text-sky-600 mx-auto" />
                 <h4 className="text-lg font-bold text-slate-900">Quality Audit Calculated!</h4>
-                <p className="text-xs text-emerald-700 font-mono font-bold">{auditSuccess}</p>
+                <p className="text-xs text-sky-700 font-mono font-bold">{auditSuccess}</p>
               </div>
             ) : (
               <form id="audit-form" onSubmit={handleExecuteAudit} className="p-6 overflow-y-auto space-y-5">
@@ -315,7 +313,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Assigned Badge</span>
-                    <div className="text-xs font-bold text-emerald-800 mt-1">
+                    <div className="text-xs font-bold text-sky-800 mt-1">
                       {totalScore >= 95 ? 'GOLD STANDARD CERTIFIED' : totalScore >= 80 ? 'LUXE VERIFIED' : 'PENDING'}
                     </div>
                   </div>

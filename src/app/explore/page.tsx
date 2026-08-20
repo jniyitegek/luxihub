@@ -85,11 +85,11 @@ function ExploreContent() {
         
         {/* Glowing Shapes */}
         <div className="absolute top-0 right-10 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto space-y-3 relative z-10">
           <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-            Explore Rwandan <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-amber-200">Luxury Hospitality</span>
+            Explore Rwandan <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Luxury Hospitality</span>
           </Text>
           <Text variant="body" className="text-sm sm:text-base text-sky-100/90 max-w-2xl">
             Browse 100% verified hotels, fine dining establishments, and guided safari expeditions. Every listing has passed our 40-point inspection protocol.
@@ -207,8 +207,8 @@ function ExploreContent() {
               >
                 <option value="ALL" className="bg-white text-slate-900">All QA Badges</option>
                 <option value="GOLD_STANDARD" className="bg-white text-sky-700 font-bold">Gold Standard Only (95%+)</option>
-                <option value="LUXE_VERIFIED" className="bg-white text-emerald-700 font-bold">Luxe Verified Only</option>
-                <option value="ECO_SUSTAINABLE" className="bg-white text-teal-700 font-bold">Eco-Sustainable Heritage</option>
+                <option value="LUXE_VERIFIED" className="bg-white text-sky-700 font-bold">Luxe Verified Only</option>
+                <option value="ECO_SUSTAINABLE" className="bg-white text-sky-700 font-bold">Eco-Sustainable Heritage</option>
               </select>
             </div>
 
@@ -235,8 +235,8 @@ function ExploreContent() {
           <span>
             Showing <strong className="text-slate-900">{filteredBusinesses.length}</strong> verified luxury experience(s)
           </span>
-          <div className="flex items-center gap-1.5 text-emerald-700 font-extrabold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center gap-1.5 text-sky-700 font-extrabold">
+            <ShieldCheck className="w-4 h-4 text-sky-600" />
             <span>Direct Reservation Escrow Guaranteed</span>
           </div>
         </div>
@@ -276,8 +276,8 @@ function ExploreContent() {
                 actionText="Reserve"
               >
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-amber-900 text-xs font-bold w-fit">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <div className="flex items-center gap-1 text-slate-900 text-xs font-bold w-fit">
+                    <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
                     <span>{item.ratingAvg.toFixed(2)}</span>
                     <span className="text-[10px] text-slate-500 font-normal">({item.reviewCount})</span>
                   </div>

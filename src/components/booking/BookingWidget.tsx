@@ -116,8 +116,8 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-bold">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="flex items-center gap-1 text-xs font-bold text-sky-700">
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
             <span>Guaranteed</span>
           </div>
         </div>
@@ -229,7 +229,7 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               <span>{formatRwf(baseRate)} × {activeOffering?.unit === 'per_night' ? `${days} night(s)` : `${guests} guest(s)`}</span>
               <span className="font-bold text-slate-800">{formatRwf(total)}</span>
             </div>
-            <div className="flex justify-between text-emerald-700 font-bold">
+            <div className="flex justify-between text-sky-700 font-bold">
               <span>Higa Lux Quality Assurance Audit</span>
               <span>Included</span>
             </div>

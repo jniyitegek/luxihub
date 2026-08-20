@@ -146,8 +146,8 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                 className="h-7 sm:h-8 lg:h-24 w-auto"
               />
               <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
               </span>
             </Link>
 
@@ -360,11 +360,11 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#09152A]/80 via-transparent to-transparent" />
                   <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <ShieldCheck className="w-4 h-4 text-sky-400" />
                       <span className="text-xs font-bold text-white/90">RDB Quality Verified</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <Star className="w-3.5 h-3.5 fill-sky-400 text-sky-400" />
                       <span className="text-xs font-bold text-white/90">4.9 Rating</span>
                     </div>
                   </div>
@@ -393,7 +393,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                 height={56}
                 className="h-8 w-auto"
               />
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-sky-500" />
             </Link>
             <button
               onClick={() => setMobileMenuOpen(false)}

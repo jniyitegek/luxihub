@@ -58,7 +58,7 @@ export default function HomePage() {
 
       {/* 1b. Extras: booking & direct search, secondary to the leaderboard */}
       <section className="w-full bg-[#0B1B36] pt-2 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center space-y-4 mb-6">
+        <div className="max-w-4xl mx-auto text-center mb-4">
           <Text variant="h3" color="white">
             Ready to book directly? Search verified stays in seconds.
           </Text>
@@ -119,7 +119,7 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B1B36]/95 via-[#0B1B36]/40 to-transparent" />
 
                 <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 rounded-full bg-[#0B1B36]/80 backdrop-blur-md text-[11px] font-extrabold text-white border border-white/20">
+                  <span className="text-[11px] font-extrabold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_60%)]">
                     {reg.count}
                   </span>
                 </div>
@@ -167,7 +167,7 @@ export default function HomePage() {
                 <span>Zero Listing Setup Fees</span>
               </div>
               <div className="flex items-center gap-2 text-white/80">
-                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                <GraduationCap className="w-4 h-4 text-sky-400" />
                 <span>Silver Service Staff Masterclasses</span>
               </div>
             </div>

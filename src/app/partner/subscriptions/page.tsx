@@ -181,7 +181,7 @@ export default function PartnerSubscriptionsPage() {
       </div>
 
       {successNotice && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs text-center max-w-md mx-auto animate-in fade-in shadow-sm">
+        <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-sky-800 font-bold text-xs text-center max-w-md mx-auto animate-in fade-in shadow-sm">
           {successNotice}
         </div>
       )}
@@ -225,7 +225,7 @@ export default function PartnerSubscriptionsPage() {
                 <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-700">
                   {tier.features.map((feat, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}

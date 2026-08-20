@@ -165,8 +165,8 @@ export function Card({
 
             <div className="flex items-center gap-3 pt-1">
               {rating && (
-                <div className="flex items-center gap-1 text-xs font-bold text-amber-600">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                <div className="flex items-center gap-1 text-xs font-bold text-sky-600">
+                  <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
                   <span>{rating.toFixed(1)}</span>
                 </div>
               )}

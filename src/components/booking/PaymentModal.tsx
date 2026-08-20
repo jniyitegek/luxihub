@@ -270,7 +270,7 @@ export function PaymentModal({ booking, isOpen, onClose, onPaymentSuccess }: Pay
 
           {/* Security Guarantee Note */}
           <div className="pt-2 flex items-center justify-center gap-2 text-[10px] text-slate-500 font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
             <span>256-Bit Encrypted Escrow • Rwanda National Bank Compliant</span>
           </div>
 

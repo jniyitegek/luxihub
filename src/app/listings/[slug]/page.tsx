@@ -102,7 +102,7 @@ export default function ListingDetailPage() {
           <Text variant="caption" color="muted" as="p" className="text-xs sm:text-sm flex items-center gap-2">
             <span>{business.address}</span>
             <span>•</span>
-            <span className="text-emerald-700 font-bold">Response Time: {business.responseTimeHours}h</span>
+            <span className="text-sky-700 font-bold">Response Time: {business.responseTimeHours}h</span>
           </Text>
         </div>
 
@@ -110,7 +110,7 @@ export default function ListingDetailPage() {
         <div className="flex items-center gap-4">
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-right">
             <div className="flex items-center justify-end gap-1 text-slate-900 font-extrabold text-base">
-              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+              <Star className="w-4 h-4 fill-sky-500 text-sky-500" />
               <span>{business.ratingAvg.toFixed(2)}</span>
             </div>
             <div className="text-[10px] text-slate-500 font-medium">
@@ -119,8 +119,8 @@ export default function ListingDetailPage() {
           </div>
 
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-right">
-            <div className="flex items-center justify-end gap-1 text-emerald-700 font-extrabold text-base">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <div className="flex items-center justify-end gap-1 text-sky-700 font-extrabold text-base">
+              <ShieldCheck className="w-4 h-4 text-sky-600" />
               <span>{business.qualityScore != null ? `${business.qualityScore}%` : 'Pending'}</span>
             </div>
             <div className="text-[10px] text-slate-500 font-medium">
@@ -142,7 +142,7 @@ export default function ListingDetailPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           
-          <div className="absolute bottom-4 left-6 text-xs text-white bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 font-medium">
+          <div className="absolute bottom-4 left-6 text-xs text-white font-medium [text-shadow:_0_1px_3px_rgb(0_0_0_/_60%)]">
             Image {activeImageIndex + 1} of {business.images.length}
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function ListingDetailPage() {
                   key={idx}
                   className="flex items-center gap-2.5 p-3 rounded-2xl bg-white border border-slate-200 text-xs text-slate-700 font-medium shadow-sm"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -288,8 +288,8 @@ export default function ListingDetailPage() {
                 <p className="text-xs text-slate-500">100% verified completed stays in Rwanda</p>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-1.5 text-xs text-sky-700 font-bold">
+                <ShieldCheck className="w-4 h-4 text-sky-600" />
                 <span>Zero Fake Reviews</span>
               </div>
             </div>
@@ -313,13 +313,13 @@ export default function ListingDetailPage() {
 
                       <div className="flex items-center gap-1">
                         {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                          <Star key={i} className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
                         ))}
                       </div>
                     </div>
 
                     <h4 className="text-xs font-bold text-slate-900">{rev.title}</h4>
-                    <p className="text-xs text-slate-600 font-normal leading-relaxed italic">
+                    <p className="text-xs text-slate-600 font-normal leading-relaxed">
                       &ldquo;{rev.comment}&rdquo;
                     </p>
 

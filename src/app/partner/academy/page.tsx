@@ -95,9 +95,9 @@ export default function HospitalityAcademyPage() {
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1 shadow-sm">
-          <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+        <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-900 space-y-1 shadow-sm">
+          <div className="flex items-center gap-1.5 font-bold text-sky-800">
+            <ShieldCheck className="w-4 h-4 text-sky-600" />
             <span>Impacts QA Audit Score</span>
           </div>
           <p className="text-[11px] text-slate-600 font-normal">Certified staff adds up to +15 points on your official Higa Lux audit.</p>
@@ -143,7 +143,7 @@ export default function HospitalityAcademyPage() {
                   <div className="space-y-1.5">
                     {course.modules?.map((mod, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs text-slate-800 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                         <span>{mod}</span>
                       </div>
                     ))}
@@ -190,10 +190,8 @@ export default function HospitalityAcademyPage() {
       >
         <div className="p-6 space-y-5">
           {successCert ? (
-            <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
-              <div className="inline-block p-2.5 rounded-full bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
+            <div className="p-5 rounded-2xl bg-sky-50 border border-sky-200 text-center space-y-3">
+              <CheckCircle2 className="w-6 h-6 text-sky-600 mx-auto" />
               <h4 className="text-sm font-bold text-slate-900">Enrollment & Certificate Generated!</h4>
               <p className="text-xs text-slate-600 font-normal">
                 Staff member enrolled successfully. Official Certificate Number:
