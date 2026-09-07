@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 
 export default function HospitalityAcademyPage() {
   const { user } = useAuth();
@@ -82,27 +83,21 @@ export default function HospitalityAcademyPage() {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
-        <div className="space-y-3">
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-            Rwandan Hospitality <span className="text-sky-600">Academy</span>
-          </h1>
-          <p className="text-sm text-slate-600 max-w-2xl font-normal">
-            Upskill your lodge and restaurant personnel to international 5-star standards. Complete certified masterclasses in Rwandan cultural warmth, fine dining silver service, and eco-conservation protocols.
-          </p>
-        </div>
+    <div className="space-y-10">
 
-        <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-900 space-y-1 shadow-sm">
-          <div className="flex items-center gap-1.5 font-bold text-sky-800">
-            <ShieldCheck className="w-4 h-4 text-sky-600" />
-            <span>Impacts QA Audit Score</span>
+      <DashboardHeader
+        title={<>Rwandan Hospitality <span className="text-sky-600">Academy</span></>}
+        subtitle="Upskill your lodge and restaurant personnel to international 5-star standards. Complete certified masterclasses in Rwandan cultural warmth, fine dining silver service, and eco-conservation protocols."
+        actions={
+          <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-900 space-y-1 shadow-sm">
+            <div className="flex items-center gap-1.5 font-bold text-sky-800">
+              <ShieldCheck className="w-4 h-4 text-sky-600" />
+              <span>Impacts QA Audit Score</span>
+            </div>
+            <p className="text-[11px] text-slate-600 font-normal">Certified staff adds up to +15 points on your official Higa Lux audit.</p>
           </div>
-          <p className="text-[11px] text-slate-600 font-normal">Certified staff adds up to +15 points on your official Higa Lux audit.</p>
-        </div>
-      </div>
+        }
+      />
 
       {/* Courses Grid */}
       {loading ? (

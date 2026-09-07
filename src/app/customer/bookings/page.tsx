@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 
 export default function CustomerBookingsPage() {
   const { user } = useAuth();
@@ -71,33 +72,21 @@ export default function CustomerBookingsPage() {
   }, [user]);
 
   return (
-    <div className="w-full space-y-10 pb-20">
-      
-      {/* Header Banner (Clean, no eyebrow tag) */}
-      <div className="w-full bg-gradient-to-b from-[#0B1B36] via-[#0D2240] to-[#0B1B36] text-white py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-              My Luxury <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Reservations</span>
-            </Text>
-            <Text variant="caption" className="text-xs sm:text-sm text-sky-100/90 font-medium">
-              Manage your verified Rwandan bookings, download QR vouchers, and write verified reviews.
-            </Text>
-          </div>
+    <div className="space-y-8">
 
+      <DashboardHeader
+        title={<>My Luxury <span className="text-sky-600">Reservations</span></>}
+        subtitle="Manage your verified Rwandan bookings, download QR vouchers, and write verified reviews."
+        actions={
           <Link
             href="/explore"
-            className="px-6 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-sky-500/30 transition-all self-start md:self-auto"
+            className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-sky-500/25 transition-all"
           >
-            <Sparkles className="w-4 h-4 text-slate-950" />
+            <Sparkles className="w-4 h-4" />
             <span>Book New Experience</span>
           </Link>
-        </div>
-
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        }
+      />
 
         {loyalty && (
           <Card
@@ -272,8 +261,6 @@ export default function CustomerBookingsPage() {
             ))}
           </div>
         )}
-
-      </div>
 
       {/* Voucher Modal */}
       {selectedVoucherBooking && (

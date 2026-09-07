@@ -29,6 +29,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
 import { Modal } from '@/components/ui/Modal';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 
 export default function PartnerDashboardPage() {
   const { user } = useAuth();
@@ -115,38 +116,27 @@ export default function PartnerDashboardPage() {
   const revenueTrendPct = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : null;
 
   return (
-    <div className="w-full space-y-10 pb-20">
-      
-      {/* Full-width Dark Banner Header (Clean, no eyebrow tag) */}
-      <div className="w-full bg-gradient-to-b from-[#0B1B36] via-[#0D2240] to-[#0B1B36] text-white py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {business && <CertificationBadge badge={business.certificationBadge} size="sm" />}
-            </div>
-            <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-              {business ? business.name : 'The Retreat by Heaven'}
-            </Text>
-            <Text variant="caption" className="text-xs sm:text-sm text-sky-100/90 font-medium">
-              RDB Accredited 5-Star Property • Managed by {user?.name || 'Jean-Paul N.'}
-            </Text>
-          </div>
+    <div className="space-y-10">
 
-          <div className="flex items-center gap-3 flex-wrap">
+      <DashboardHeader
+        title={business ? business.name : 'The Retreat by Heaven'}
+        subtitle={`RDB Accredited 5-Star Property • Managed by ${user?.name || 'Jean-Paul N.'}`}
+        badges={business && <CertificationBadge badge={business.certificationBadge} size="sm" />}
+        actions={
+          <>
             <Link
               href="/partner/academy"
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-2 border border-white/20 transition-all backdrop-blur-md"
+              className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 text-xs font-bold flex items-center gap-2 border border-slate-200 transition-all shadow-sm"
             >
-              <GraduationCap className="w-4 h-4 text-sky-400" />
+              <GraduationCap className="w-4 h-4 text-sky-600" />
               <span>Staff Academy</span>
             </Link>
 
             <Link
               href="/partner/subscriptions"
-              className="px-5 py-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-md"
+              className="px-5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold flex items-center gap-2 transition-all"
             >
-              <Award className="w-4 h-4 text-sky-400" />
+              <Award className="w-4 h-4 text-sky-600" />
               <span>Membership Tier</span>
             </Link>
 
@@ -154,18 +144,15 @@ export default function PartnerDashboardPage() {
               onClick={() => setShowAddModal(true)}
               variant="primary"
               leftIcon={<PlusCircle className="w-4 h-4" />}
-              className="!rounded-xl !bg-sky-500 hover:!bg-sky-400 !text-slate-950 !border-none shadow-lg shadow-sky-500/30"
+              className="!rounded-xl"
             >
               Add Suite / Package
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        
-        {/* KPI Stats Cards Grid */}
+      {/* KPI Stats Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
@@ -333,8 +320,6 @@ export default function PartnerDashboardPage() {
           </div>
 
         </div>
-
-      </div>
 
       {/* Add Offering Modal */}
       <Modal

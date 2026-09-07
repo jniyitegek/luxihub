@@ -7,6 +7,7 @@ import { SubscriptionTier } from '@/lib/types';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 
 interface VisibilityPlan {
   label: string;
@@ -168,17 +169,12 @@ export default function PartnerSubscriptionsPage() {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
+    <div className="space-y-10">
 
-      {/* Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-3">
-        <Text variant="h1" color="dark">
-          Partner Membership <span className="text-sky-600">Tiers</span>
-        </Text>
-        <Text variant="body" color="muted" className="max-w-2xl mx-auto">
-          Scale your Rwandan hospitality venue with lower commission rates, prime homepage placements, and continuous staff masterclass certifications.
-        </Text>
-      </div>
+      <DashboardHeader
+        title={<>Partner Membership <span className="text-sky-600">Tiers</span></>}
+        subtitle="Scale your Rwandan hospitality venue with lower commission rates, prime homepage placements, and continuous staff masterclass certifications."
+      />
 
       {successNotice && (
         <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-sky-800 font-bold text-xs text-center max-w-md mx-auto animate-in fade-in shadow-sm">

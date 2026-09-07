@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { Modal } from '@/components/ui/Modal';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { formatRwf } from '@/lib/utils';
 
 export default function AdminDashboardPage() {
@@ -120,36 +121,19 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="w-full space-y-10 pb-20">
-      
-      {/* Full-width Dark Header Banner (Clean, no eyebrow tag) */}
-      <div className="w-full bg-gradient-to-b from-[#0B1B36] via-[#0D2240] to-[#0B1B36] text-white py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        {/* Glowing Shapes */}
-        <div className="absolute top-0 right-10 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-10">
 
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-              Chief QA & Auditor <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Dashboard</span>
-            </Text>
-            <Text variant="caption" className="text-xs sm:text-sm text-sky-100/90 font-medium">
-              Logged in as {user?.name || 'Dr. Vanessa Uwase'} (RDB Senior Quality Inspector)
-            </Text>
-          </div>
+      <DashboardHeader
+        title="Chief QA & Auditor Dashboard"
+        subtitle={`Logged in as ${user?.name || 'Dr. Vanessa Uwase'} (RDB Senior Quality Inspector)`}
+        actions={
+          <span className="text-xs font-extrabold px-4 py-2 bg-sky-50 rounded-xl border border-sky-200 text-sky-700">
+            RDB Standard V1.0 Active
+          </span>
+        }
+      />
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-extrabold px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-white backdrop-blur-md">
-              RDB Standard V1.0 Active
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        
-        {/* Admin KPI Stats Grid */}
+      {/* Admin KPI Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           <Card variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-7 space-y-2 hover:shadow-xl">
@@ -261,8 +245,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
-
-      </div>
 
       {/* 40-Point QA Inspection Audit Modal */}
       <Modal
