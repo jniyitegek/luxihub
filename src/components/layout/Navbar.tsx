@@ -23,6 +23,8 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { RateServiceButton } from '@/components/reviews/RateServiceButton';
+
 
 interface NavbarProps {
   onOpenConcierge?: () => void;
@@ -184,8 +186,15 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
               )}
             </nav>
 
-            {/* FAR RIGHT: Login Button + User Switcher/Account + Search Icon */}
+            {/* FAR RIGHT: Rate Service Button + Login Button + User Switcher */}
             <div className="hidden lg:flex items-center gap-3 shrink-0">
+
+              <RateServiceButton
+                serviceId="kigali-urban-luxury"
+                serviceName="Rwandan Luxury Hospitality Service"
+                variant="glass"
+                buttonText="Rate a Service"
+              />
               
               {/* Account Dropdown or Login Button */}
               <div className="relative">
@@ -440,6 +449,16 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   Explore
                 </Button>
               </Link>
+            </div>
+
+            <div className="pt-2">
+              <RateServiceButton
+                serviceId="kigali-urban-luxury"
+                serviceName="Rwandan Luxury Hospitality Service"
+                variant="default"
+                buttonText="Rate a Service"
+                className="w-full justify-center !py-3 font-extrabold shadow-lg shadow-sky-500/25"
+              />
             </div>
 
             {user && (

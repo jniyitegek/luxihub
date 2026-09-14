@@ -29,6 +29,8 @@ import { BookingWidget } from '@/components/booking/BookingWidget';
 import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
 import { formatRwf, formatUsd } from '@/lib/utils';
+import { RateServiceButton } from '@/components/reviews/RateServiceButton';
+
 
 export default function ListingDetailPage() {
   const params = useParams();
@@ -39,23 +41,24 @@ export default function ListingDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedOfferingId, setSelectedOfferingId] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    async function fetchDetails() {
-      try {
-        const res = await fetch(`/api/businesses/${slug}`);
-        const data = await res.json();
-        if (data.business) {
-          setBusiness(data.business);
-          if (data.business.offerings?.length > 0) {
-            setSelectedOfferingId(data.business.offerings[0].id);
-          }
+  const fetchDetails = async () => {
+    try {
+      const res = await fetch(`/api/businesses/${slug}`);
+      const data = await res.json();
+      if (data.business) {
+        setBusiness(data.business);
+        if (data.business.offerings?.length > 0 && !selectedOfferingId) {
+          setSelectedOfferingId(data.business.offerings[0].id);
         }
-      } catch (e) {
-        console.error('Failed to load listing details:', e);
-      } finally {
-        setLoading(false);
       }
+    } catch (e) {
+      console.error('Failed to load listing details:', e);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     if (slug) {
       fetchDetails();
     }
@@ -106,8 +109,17 @@ export default function ListingDetailPage() {
           </Text>
         </div>
 
-        {/* Rating and Inspection Scorecard */}
-        <div className="flex items-center gap-4">
+        {/* Rating and Inspection Scorecard & Public Rate Button */}
+        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap justify-start md:justify-end">
+          <RateServiceButton
+            serviceId={business.id}
+            serviceName={business.name}
+            variant="default"
+            buttonText="Rate a Service"
+            onRatingSuccess={() => fetchDetails()}
+            className="h-[54px] shadow-lg shadow-sky-500/25"
+          />
+
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-right">
             <div className="flex items-center justify-end gap-1 text-slate-900 font-extrabold text-base">
               <Star className="w-4 h-4 fill-sky-500 text-sky-500" />
@@ -261,17 +273,26 @@ export default function ListingDetailPage() {
                         <div className="text-[10px] text-slate-500">
                           ~{formatUsd(Math.round(off.price / 1350))} /{off.unit.replace('per_', '')}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedOfferingId(off.id)}
-                          className={`mt-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                            selectedOfferingId === off.id
-                              ? 'bg-sky-600 text-white shadow-md shadow-sky-500/25'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          {selectedOfferingId === off.id ? 'Selected' : 'Select Package'}
-                        </button>
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOfferingId(off.id)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              selectedOfferingId === off.id
+                                ? 'bg-sky-600 text-white shadow-md shadow-sky-500/25'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            {selectedOfferingId === off.id ? 'Selected' : 'Select Package'}
+                          </button>
+                          <RateServiceButton
+                            serviceId={off.id}
+                            serviceName={`${off.title} (${business.name})`}
+                            variant="star"
+                            buttonText="Rate Package"
+                            onRatingSuccess={() => fetchDetails()}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -367,6 +388,15 @@ export default function ListingDetailPage() {
         </div>
 
       </div>
+
+      {/* Floating Rate Action Button for quick public guest access */}
+      <RateServiceButton
+        serviceId={business.id}
+        serviceName={business.name}
+        variant="fab"
+        buttonText="Rate this Service"
+        onRatingSuccess={() => fetchDetails()}
+      />
 
     </div>
   );

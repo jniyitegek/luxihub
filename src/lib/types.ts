@@ -240,3 +240,23 @@ export interface SupportTicketDto {
   }[];
   createdAt: string;
 }
+
+export interface ServiceRatingDto {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  rating: number;
+  comment?: string | null;
+  reviewerName: string;
+  createdAt: string;
+}
+
+export interface CreateServiceRatingInput {
+  serviceId: string;
+  serviceName: string;
+  rating: number;
+  comment?: string;
+  reviewerName?: string;
+  hp_field?: string; // honeypot anti-spam field
+}
+

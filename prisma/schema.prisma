@@ -237,3 +237,18 @@ model PartnerSubscription {
   perks           String    @default("[]") // JSON string array
   createdAt       DateTime  @default(now())
 }
+
+model ServiceRating {
+  id           String   @id @default(cuid())
+  serviceId    String   // service_id
+  serviceName  String
+  rating       Int
+  comment      String?
+  reviewerName String   @default("Anonymous") // reviewer_name
+  ipHash       String   // ip_hash
+  createdAt    DateTime @default(now()) // created_at
+
+  @@index([serviceId])
+  @@index([ipHash])
+}
+

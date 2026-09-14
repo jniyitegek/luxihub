@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
 import { LiveLeaderboard } from '@/components/landing/LiveLeaderboard';
 import { formatRwf, formatUsd } from '@/lib/utils';
+import { RateServiceButton } from '@/components/reviews/RateServiceButton';
+
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -276,10 +278,20 @@ function ExploreContent() {
                 actionText="Reserve"
               >
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-slate-900 text-xs font-bold w-fit">
-                    <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
-                    <span>{item.ratingAvg.toFixed(2)}</span>
-                    <span className="text-[10px] text-slate-500 font-normal">({item.reviewCount})</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 text-slate-900 text-xs font-bold w-fit">
+                      <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
+                      <span>{item.ratingAvg.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-500 font-normal">({item.reviewCount})</span>
+                    </div>
+
+                    <RateServiceButton
+                      serviceId={item.id}
+                      serviceName={item.name}
+                      variant="star"
+                      buttonText="Rate"
+                      onRatingSuccess={() => fetchListings()}
+                    />
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {item.amenities.slice(0, 3).map((amenity, idx) => (
