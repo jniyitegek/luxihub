@@ -1,13 +1,29 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { UserSession, UserRole } from '@/lib/types';
-import { DEMO_ACCOUNTS } from '@/lib/auth';
+import { publicConfig } from '@/lib/publicConfig';
+
+export interface AuthResult {
+  ok: boolean;
+  error?: string;
+  /** Field-level messages keyed by input name, for inline form errors. */
+  fieldErrors?: Record<string, string>;
+}
+
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  acceptedTerms: boolean;
+}
 
 interface AuthContextType {
   user: UserSession | null;
   loading: boolean;
-  login: (email: string, password?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (input: RegisterInput) => Promise<AuthResult>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -15,47 +31,79 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function readAuthResponse(res: Response): Promise<{ result: AuthResult; user?: UserSession }> {
+  let data: any = {};
+  try {
+    data = await res.json();
+  } catch {
+    // An empty or non-JSON body is handled by the status check below.
+  }
+
+  if (res.ok && data?.user) {
+    return { result: { ok: true }, user: data.user as UserSession };
+  }
+
+  return {
+    result: {
+      ok: false,
+      error: data?.error || 'Something went wrong. Please try again.',
+      fieldErrors: data?.details && typeof data.details === 'object' ? data.details : undefined,
+    },
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch('/api/auth/me', { cache: 'no-store' });
       const data = await res.json();
-      setUser(data.user || null);
-    } catch (e) {
-      console.error('Failed to fetch auth me:', e);
+      setUser(data.user ?? null);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshUser();
-  }, []);
+  }, [refreshUser]);
 
-  const login = async (email: string, password = 'password123'): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        setUser(data.user);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      console.error('Login failed:', e);
-      return false;
+      const { result, user: signedIn } = await readAuthResponse(res);
+      if (signedIn) setUser(signedIn);
+      return result;
+    } catch {
+      return { ok: false, error: 'Could not reach the server. Check your connection and try again.' };
     }
-  };
+  }, []);
 
-  const switchRole = async (role: UserRole) => {
+  const register = useCallback(async (input: RegisterInput): Promise<AuthResult> => {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const { result, user: created } = await readAuthResponse(res);
+      if (created) setUser(created);
+      return result;
+    } catch {
+      return { ok: false, error: 'Could not reach the server. Check your connection and try again.' };
+    }
+  }, []);
+
+  const switchRole = useCallback(async (role: UserRole) => {
+    if (!publicConfig.demoMode) return;
     try {
       setLoading(true);
       const res = await fetch('/api/auth/switch-role', {
@@ -64,30 +112,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ role }),
       });
       const data = await res.json();
-      if (res.ok && data.user) {
-        setUser(data.user);
-      }
-    } catch (e) {
-      console.error('Switch role failed:', e);
+      if (res.ok && data.user) setUser(data.user);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
       setUser(null);
-    } catch (e) {
-      console.error('Logout failed:', e);
     }
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout, switchRole, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout, switchRole, refreshUser }),
+    [user, loading, login, register, logout, switchRole, refreshUser]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

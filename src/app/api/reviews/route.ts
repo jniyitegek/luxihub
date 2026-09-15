@@ -1,118 +1,111 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { badRequest, conflict, forbidden, handleRouteError, notFound, parseBody, requireRole, requireUser } from '@/lib/api';
+
+export const dynamic = 'force-dynamic';
+
+const starRating = z.coerce.number().int().min(1).max(5);
+
+const createSchema = z.object({
+  bookingId: z.string().min(1),
+  rating: starRating.default(5),
+  cleanlinessRating: starRating.default(5),
+  serviceRating: starRating.default(5),
+  hospitalityRating: starRating.default(5),
+  valueRating: starRating.default(5),
+  title: z.string().trim().min(3, 'Give your review a title').max(120),
+  comment: z.string().trim().min(10, 'Tell us a little more about your stay').max(4000),
+});
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
+    const user = await requireUser();
+    const input = await parseBody(req, createSchema);
 
-    const body = await req.json();
-    const {
-      bookingId,
-      rating = 5,
-      cleanlinessRating = 5,
-      serviceRating = 5,
-      hospitalityRating = 5,
-      valueRating = 5,
-      title,
-      comment,
-    } = body;
-
-    if (!bookingId || !comment || !title) {
-      return NextResponse.json({ error: 'Missing required review fields' }, { status: 400 });
-    }
-
-    // Verify that the booking exists, belongs to this customer, and is COMPLETED
     const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: { business: true },
+      where: { id: input.bookingId },
+      include: { review: { select: { id: true } } },
     });
 
-    if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-    }
-
-    if (booking.customerId !== user.id && user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'You can only review your own bookings' }, { status: 403 });
-    }
-
+    if (!booking) throw notFound('Booking not found');
+    if (booking.customerId !== user.id) throw forbidden('You can only review your own stays');
     if (booking.status !== 'COMPLETED') {
-      return NextResponse.json({ error: 'Reviews can only be submitted for completed bookings' }, { status: 400 });
+      throw badRequest('Reviews can only be submitted once a stay is completed');
+    }
+    if (booking.review) {
+      throw conflict('A verified review has already been submitted for this booking');
     }
 
-    // Check if review already exists for this booking
-    const existingReview = await prisma.review.findUnique({
-      where: { bookingId },
+    const review = await prisma.$transaction(async (tx) => {
+      const created = await tx.review.create({
+        data: {
+          bookingId: booking.id,
+          businessId: booking.businessId,
+          customerId: user.id,
+          rating: input.rating,
+          cleanlinessRating: input.cleanlinessRating,
+          serviceRating: input.serviceRating,
+          hospitalityRating: input.hospitalityRating,
+          valueRating: input.valueRating,
+          title: input.title,
+          comment: input.comment,
+          isVerified: true,
+        },
+      });
+
+      // Recompute from aggregates rather than loading every row.
+      const stats = await tx.review.aggregate({
+        where: { businessId: booking.businessId },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
+
+      await tx.business.update({
+        where: { id: booking.businessId },
+        data: {
+          ratingAvg: Number((stats._avg.rating ?? 5).toFixed(2)),
+          reviewCount: stats._count._all,
+        },
+      });
+
+      return created;
     });
 
-    if (existingReview) {
-      return NextResponse.json({ error: 'A verified review has already been submitted for this booking' }, { status: 400 });
-    }
-
-    // Create the verified review
-    const review = await prisma.review.create({
-      data: {
-        bookingId,
-        businessId: booking.businessId,
-        customerId: user.id,
-        rating: parseInt(rating.toString(), 10),
-        cleanlinessRating: parseInt(cleanlinessRating.toString(), 10),
-        serviceRating: parseInt(serviceRating.toString(), 10),
-        hospitalityRating: parseInt(hospitalityRating.toString(), 10),
-        valueRating: parseInt(valueRating.toString(), 10),
-        title,
-        comment,
-        isVerified: true,
-      },
-    });
-
-    // Recalculate business average rating and review count
-    const allReviews = await prisma.review.findMany({
-      where: { businessId: booking.businessId },
-    });
-
-    const avgRating = allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
-
-    await prisma.business.update({
-      where: { id: booking.businessId },
-      data: {
-        ratingAvg: parseFloat(avgRating.toFixed(2)),
-        reviewCount: allReviews.length,
-      },
-    });
-
-    return NextResponse.json({ success: true, review });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Review submission failed' }, { status: 500 });
+    return NextResponse.json({ success: true, review }, { status: 201 });
+  } catch (error) {
+    return handleRouteError(error, 'reviews POST');
   }
 }
 
-// Partner reply to review
+const replySchema = z.object({
+  reviewId: z.string().min(1),
+  partnerReply: z.string().trim().min(2, 'Write a reply').max(2000),
+});
+
+/** Partner reply. Restricted to the owner of the reviewed listing. */
 export async function PATCH(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const user = await requireRole('PARTNER', 'ADMIN');
+    const { reviewId, partnerReply } = await parseBody(req, replySchema);
 
-    const { reviewId, partnerReply } = await req.json();
-    if (!reviewId || !partnerReply) {
-      return NextResponse.json({ error: 'Missing reviewId or reply' }, { status: 400 });
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      include: { business: { select: { ownerId: true } } },
+    });
+
+    if (!review) throw notFound('Review not found');
+    if (user.role !== 'ADMIN' && review.business.ownerId !== user.id) {
+      throw forbidden('You can only reply to reviews of your own listings');
     }
 
     const updated = await prisma.review.update({
       where: { id: reviewId },
-      data: {
-        partnerReply,
-        partnerRepliedAt: new Date(),
-      },
+      data: { partnerReply, partnerRepliedAt: new Date() },
     });
 
     return NextResponse.json({ success: true, review: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to submit partner reply' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'reviews PATCH');
   }
 }

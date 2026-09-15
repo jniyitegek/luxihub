@@ -123,10 +123,12 @@ export default function ListingDetailPage() {
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-right">
             <div className="flex items-center justify-end gap-1 text-slate-900 font-extrabold text-base">
               <Star className="w-4 h-4 fill-sky-500 text-sky-500" />
-              <span>{business.ratingAvg.toFixed(2)}</span>
+              <span>{business.reviewCount > 0 ? business.ratingAvg.toFixed(2) : '—'}</span>
             </div>
             <div className="text-[10px] text-slate-500 font-medium">
-              {business.reviewCount} Verified Reviews
+              {business.reviewCount > 0
+                ? `${business.reviewCount} Verified Review${business.reviewCount === 1 ? '' : 's'}`
+                : 'No verified reviews yet'}
             </div>
           </div>
 

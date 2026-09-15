@@ -1,59 +1,48 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { signToken, DEMO_ACCOUNTS, getCurrentUser } from '@/lib/auth';
+import { sessionCookie, signToken, toSession } from '@/lib/auth';
+import { forbidden, handleRouteError, parseBody, requireUser } from '@/lib/api';
+import { demoModeEnabled } from '@/lib/env';
+import { DEMO_EMAILS, demoAccountForRole } from '@/lib/demoAccounts';
 
-const DEMO_EMAILS = new Set([
-  DEMO_ACCOUNTS.customer.email,
-  DEMO_ACCOUNTS.partner.email,
-  DEMO_ACCOUNTS.admin.email,
-]);
+/**
+ * One-click role switcher for the guided demo.
+ *
+ * This mints a session for a different seeded account without a password, so
+ * it is hard-gated twice: the deployment must have demo mode enabled (which
+ * `env.ts` refuses to allow in production), and the caller must already hold a
+ * session for one of the seeded demo accounts.
+ */
+
+const switchSchema = z.object({
+  role: z.enum(['CUSTOMER', 'PARTNER', 'ADMIN']),
+});
 
 export async function POST(req: Request) {
   try {
-    // Demo-mode role switcher: only usable by a caller who already holds a
-    // valid session for one of the fixed demo accounts, so it can't be used
-    // to mint an unauthenticated admin session.
-    const currentUser = await getCurrentUser();
-    if (!currentUser || !DEMO_EMAILS.has(currentUser.email)) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    if (!demoModeEnabled) {
+      throw forbidden('Role switching is only available in demo environments');
     }
 
-    const { role } = await req.json(); // CUSTOMER | PARTNER | ADMIN
+    const current = await requireUser();
+    if (!DEMO_EMAILS.has(current.email)) {
+      throw forbidden('Role switching is limited to the seeded demo accounts');
+    }
 
-    let targetEmail = DEMO_ACCOUNTS.customer.email;
-    if (role === 'PARTNER') targetEmail = DEMO_ACCOUNTS.partner.email;
-    if (role === 'ADMIN') targetEmail = DEMO_ACCOUNTS.admin.email;
+    const { role } = await parseBody(req, switchSchema);
+    const target = demoAccountForRole(role);
 
-    const user = await prisma.user.findUnique({
-      where: { email: targetEmail },
-    });
-
+    const user = await prisma.user.findUnique({ where: { email: target.email } });
     if (!user) {
-      return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+      throw forbidden('The demo account for this role has not been seeded');
     }
 
-    const userSession = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role as any,
-      phone: user.phone || undefined,
-      avatarUrl: user.avatarUrl || undefined,
-    };
-
-    const token = signToken(userSession);
-
-    const response = NextResponse.json({ success: true, user: userSession });
-    response.cookies.set('lux_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
-
+    const session = toSession(user);
+    const response = NextResponse.json({ success: true, user: session });
+    response.cookies.set(sessionCookie(await signToken(session)));
     return response;
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Switch role failed' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'auth/switch-role');
   }
 }

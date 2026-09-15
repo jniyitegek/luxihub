@@ -1,155 +1,173 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { handleRouteError, parseBody, parseQuery, requireRole } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
+
+const BUSINESS_TYPES = ['HOTEL', 'RESTAURANT', 'TOUR'] as const;
+const REGIONS = ['Kigali', 'Musanze', 'Rubavu', 'Nyungwe', 'Akagera'] as const;
+const BADGES = ['LUXE_VERIFIED', 'GOLD_STANDARD', 'ECO_SUSTAINABLE', 'NONE'] as const;
+
+const querySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  type: z.string().trim().optional(),
+  location: z.string().trim().optional(),
+  badge: z.string().trim().optional(),
+  minPrice: z.coerce.number().nonnegative().optional(),
+  maxPrice: z.coerce.number().nonnegative().optional(),
+  featured: z.string().optional(),
+});
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get('q') || '';
-    const type = searchParams.get('type');
-    const location = searchParams.get('location');
-    const badge = searchParams.get('badge');
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    const featuredOnly = searchParams.get('featured') === 'true';
+    const params = parseQuery(req, querySchema);
+    const user = await getCurrentUser();
 
-    const whereClause: any = {};
+    const where: any = {};
 
-    if (query) {
-      whereClause.OR = [
-        { name: { contains: query } },
-        { description: { contains: query } },
-        { location: { contains: query } },
-        { address: { contains: query } },
-      ];
+    // The public directory shows verified listings only. Partners see their
+    // own pending listings so they can work on them before approval, and
+    // administrators see everything.
+    if (user?.role === 'ADMIN') {
+      // no status filter
+    } else if (user?.role === 'PARTNER') {
+      where.OR = [{ status: 'VERIFIED' }, { ownerId: user.id }];
+    } else {
+      where.status = 'VERIFIED';
     }
 
-    if (type && type !== 'ALL') {
-      whereClause.type = type;
+    const and: any[] = [];
+
+    if (params.q) {
+      and.push({
+        OR: [
+          { name: { contains: params.q, mode: 'insensitive' } },
+          { description: { contains: params.q, mode: 'insensitive' } },
+          { shortTagline: { contains: params.q, mode: 'insensitive' } },
+          { location: { contains: params.q, mode: 'insensitive' } },
+          { address: { contains: params.q, mode: 'insensitive' } },
+        ],
+      });
     }
 
-    if (location && location !== 'ALL') {
-      whereClause.location = location;
+    if (params.type && params.type !== 'ALL') and.push({ type: params.type });
+    if (params.location && params.location !== 'ALL') and.push({ location: params.location });
+    if (params.badge && params.badge !== 'ALL') and.push({ certificationBadge: params.badge });
+
+    if (params.minPrice !== undefined) and.push({ basePrice: { gte: params.minPrice } });
+    if (params.maxPrice !== undefined) and.push({ basePrice: { lte: params.maxPrice } });
+
+    if (params.featured === 'true') {
+      and.push({ isFeatured: true });
+      // A spotlight that has expired should stop showing as featured.
+      and.push({ OR: [{ featuredUntil: null }, { featuredUntil: { gte: new Date() } }] });
     }
 
-    if (badge && badge !== 'ALL') {
-      whereClause.certificationBadge = badge;
-    }
-
-    if (featuredOnly) {
-      whereClause.isFeatured = true;
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        { OR: [{ featuredUntil: null }, { featuredUntil: { gte: new Date() } }] },
-      ];
-    }
-
-    if (minPrice || maxPrice) {
-      whereClause.basePrice = {};
-      if (minPrice) whereClause.basePrice.gte = parseFloat(minPrice);
-      if (maxPrice) whereClause.basePrice.lte = parseFloat(maxPrice);
-    }
+    if (and.length > 0) where.AND = and;
 
     const businesses = await prisma.business.findMany({
-      where: whereClause,
+      where,
       include: {
-        offerings: true,
+        offerings: { where: { isAvailable: true } },
         reviews: {
           take: 3,
           orderBy: { createdAt: 'desc' },
-          include: {
-            customer: {
-              select: { name: true, avatarUrl: true },
-            },
-          },
+          include: { customer: { select: { name: true, avatarUrl: true } } },
         },
-        audits: {
-          orderBy: { auditDate: 'desc' },
-          take: 1,
-        },
+        audits: { orderBy: { auditDate: 'desc' }, take: 1 },
       },
       orderBy: [{ isFeatured: 'desc' }, { ratingAvg: 'desc' }],
     });
 
-    const formatted = businesses.map((b) => {
-      const { audits, ...rest } = b;
-      return {
-        ...rest,
-        amenities: JSON.parse(b.amenities || '[]'),
-        images: JSON.parse(b.images || '[]'),
-        qualityScore: audits[0]?.score ?? null,
-        offerings: b.offerings.map((o) => ({
-          ...o,
-          images: JSON.parse(o.images || '[]'),
-          inclusions: JSON.parse(o.inclusions || '[]'),
-        })),
-      };
-    });
+    const formatted = businesses.map(({ audits, ...b }) => ({
+      ...b,
+      amenities: JSON.parse(b.amenities || '[]'),
+      images: JSON.parse(b.images || '[]'),
+      qualityScore: audits[0]?.score ?? null,
+      offerings: b.offerings.map((o) => ({
+        ...o,
+        images: JSON.parse(o.images || '[]'),
+        inclusions: JSON.parse(o.inclusions || '[]'),
+      })),
+    }));
 
     return NextResponse.json({ success: true, businesses: formatted });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch businesses' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'businesses GET');
   }
 }
 
+const createSchema = z.object({
+  name: z.string().trim().min(3, 'Enter the business name').max(120),
+  type: z.enum(BUSINESS_TYPES),
+  location: z.enum(REGIONS),
+  address: z.string().trim().min(5, 'Enter the physical address').max(240),
+  description: z.string().trim().min(40, 'Describe the property in at least 40 characters').max(5000),
+  shortTagline: z.string().trim().max(160).optional(),
+  amenities: z.array(z.string().trim().max(120)).max(40).default([]),
+  images: z.array(z.string().url('Each image must be a valid URL')).max(20).default([]),
+  pricingTier: z.enum(['$$', '$$$', '$$$$']).default('$$$'),
+  basePrice: z.coerce.number().positive('Enter a nightly or per-cover rate').max(100_000_000),
+  currency: z.string().trim().length(3).default('RWF'),
+  phone: z.string().trim().max(32).optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
+  website: z.string().trim().url('Enter a valid website URL').optional().or(z.literal('')),
+});
+
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('PARTNER', 'ADMIN');
+    const input = await parseBody(req, createSchema);
 
-    const body = await req.json();
-    const {
-      name,
-      type,
-      location,
-      address,
-      description,
-      shortTagline,
-      amenities,
-      images,
-      pricingTier,
-      basePrice,
-      currency = 'RWF',
-      phone,
-      email,
-      website,
-    } = body;
-
-    if (!name || !type || !location || !address || !description) {
-      return NextResponse.json({ error: 'Missing required business listing fields' }, { status: 400 });
-    }
-
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.floor(100 + Math.random() * 900);
-
-    const newBusiness = await prisma.business.create({
+    const business = await prisma.business.create({
       data: {
         ownerId: user.id,
-        name,
-        slug,
-        type,
-        location,
-        address,
-        description,
-        shortTagline: shortTagline || `${type} in ${location}, Rwanda`,
-        amenities: JSON.stringify(amenities || []),
-        images: JSON.stringify(images || [
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-        ]),
-        pricingTier: pricingTier || '$$$',
-        basePrice: parseFloat(basePrice) || 150000,
-        currency,
-        status: user.role === 'ADMIN' ? 'VERIFIED' : 'PENDING',
-        certificationBadge: user.role === 'ADMIN' ? 'LUXE_VERIFIED' : 'NONE',
-        phone: phone || user.phone,
-        email: email || user.email,
-        website: website || '',
+        name: input.name,
+        slug: await uniqueSlug(input.name),
+        type: input.type,
+        location: input.location,
+        address: input.address,
+        description: input.description,
+        shortTagline: input.shortTagline || `${input.type} in ${input.location}, Rwanda`,
+        amenities: JSON.stringify(input.amenities),
+        images: JSON.stringify(input.images),
+        pricingTier: input.pricingTier,
+        basePrice: input.basePrice,
+        currency: input.currency,
+        // A new listing is not certified until it passes a QA audit, and a
+        // partner cannot grant themselves a badge.
+        status: 'PENDING',
+        certificationBadge: 'NONE',
+        ratingAvg: 0,
+        reviewCount: 0,
+        isFeatured: false,
+        phone: input.phone || user.phone || null,
+        email: input.email || user.email,
+        website: input.website || null,
       },
     });
 
-    return NextResponse.json({ success: true, business: newBusiness });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create business listing' }, { status: 500 });
+    return NextResponse.json({ success: true, business }, { status: 201 });
+  } catch (error) {
+    return handleRouteError(error, 'businesses POST');
   }
+}
+
+async function uniqueSlug(name: string): Promise<string> {
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 60) || 'listing';
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = attempt === 0 ? base : `${base}-${Math.floor(100 + Math.random() * 900)}`;
+    const taken = await prisma.business.findUnique({ where: { slug: candidate }, select: { id: true } });
+    if (!taken) return candidate;
+  }
+
+  return `${base}-${Date.now().toString(36)}`;
 }

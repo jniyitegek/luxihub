@@ -279,11 +279,15 @@ function ExploreContent() {
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 text-slate-900 text-xs font-bold w-fit">
-                      <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
-                      <span>{item.ratingAvg.toFixed(2)}</span>
-                      <span className="text-[10px] text-slate-500 font-normal">({item.reviewCount})</span>
-                    </div>
+                    {item.reviewCount > 0 ? (
+                      <div className="flex items-center gap-1 text-slate-900 text-xs font-bold w-fit">
+                        <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
+                        <span>{item.ratingAvg.toFixed(2)}</span>
+                        <span className="text-[10px] text-slate-500 font-normal">({item.reviewCount})</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 w-fit">Newly listed</span>
+                    )}
 
                     <RateServiceButton
                       serviceId={item.id}

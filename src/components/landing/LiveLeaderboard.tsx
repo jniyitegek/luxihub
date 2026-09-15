@@ -232,7 +232,7 @@ function ListRow({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank: nu
       <div className="text-right shrink-0">
         <div className={`text-lg font-extrabold ${isHero ? 'text-white' : 'text-slate-900'}`}>{entry.liveScore}</div>
         <div className={`text-[10px] font-semibold ${isHero ? 'text-white/50' : 'text-slate-400'}`}>
-          {entry.ratingAvg.toFixed(1)}★ ({entry.reviewCount})
+          {entry.reviewCount > 0 ? `${entry.ratingAvg.toFixed(1)}★ (${entry.reviewCount})` : 'Awaiting reviews'}
         </div>
       </div>
     </Link>

@@ -30,7 +30,7 @@ export default function HospitalityAcademyPage() {
   const [staffName, setStaffName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
   const [enrolling, setEnrolling] = useState(false);
-  const [successCert, setSuccessCert] = useState<string | null>(null);
+  const [enrolledParticipant, setEnrolledParticipant] = useState<string | null>(null);
 
   const fetchCourses = async () => {
     try {
@@ -68,7 +68,7 @@ export default function HospitalityAcademyPage() {
 
       const data = await res.json();
       if (res.ok && data.enrollment) {
-        setSuccessCert(data.enrollment.certificateNumber);
+        setEnrolledParticipant(data.enrollment.participantName);
         setStaffName('');
         setStaffEmail('');
         fetchCourses();
@@ -161,7 +161,7 @@ export default function HospitalityAcademyPage() {
                   type="button"
                   onClick={() => {
                     setSelectedCourse(course);
-                    setSuccessCert(null);
+                    setEnrolledParticipant(null);
                   }}
                   className="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-sky-500/25 hover:opacity-95 transition-all"
                 >
@@ -184,21 +184,20 @@ export default function HospitalityAcademyPage() {
         size="sm"
       >
         <div className="p-6 space-y-5">
-          {successCert ? (
+          {enrolledParticipant ? (
             <div className="p-5 rounded-2xl bg-sky-50 border border-sky-200 text-center space-y-3">
               <CheckCircle2 className="w-6 h-6 text-sky-600 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-900">Enrollment & Certificate Generated!</h4>
-              <p className="text-xs text-slate-600 font-normal">
-                Staff member enrolled successfully. Official Certificate Number:
+              <h4 className="text-sm font-bold text-slate-900">Enrollment confirmed</h4>
+              <p className="text-xs text-slate-600 font-normal leading-relaxed">
+                <strong className="text-slate-900">{enrolledParticipant}</strong> is enrolled on{' '}
+                <strong className="text-slate-900">{selectedCourse?.title}</strong>. Joining instructions go out by
+                email. The official certificate number is issued once the course is completed.
               </p>
-              <div className="p-2 rounded-xl bg-slate-100 font-mono text-sm font-bold text-slate-900 border border-slate-300">
-                {successCert}
-              </div>
               <Button
                 type="button"
                 onClick={() => {
                   setSelectedCourse(null);
-                  setSuccessCert(null);
+                  setEnrolledParticipant(null);
                 }}
                 variant="primary"
                 fullWidth

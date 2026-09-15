@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
+import { forbidden, handleRouteError, notFound, requireRole } from '@/lib/api';
 
 // Advanced Visibility Tools: promotional placement boost plans
 const BOOST_PLANS: Record<string, { label: string; days: number; price: number }> = {
@@ -10,10 +12,7 @@ const BOOST_PLANS: Record<string, { label: string; days: number; price: number }
 
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('PARTNER', 'ADMIN');
 
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
@@ -22,12 +21,10 @@ export async function GET(req: Request) {
       ? await prisma.business.findUnique({ where: { id: businessId } })
       : await prisma.business.findFirst({ where: { ownerId: user.id } });
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    if (!business) throw notFound('Business not found');
 
     if (user.role !== 'ADMIN' && business.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
     return NextResponse.json({
@@ -36,18 +33,15 @@ export async function GET(req: Request) {
       featuredUntil: business.featuredUntil,
       plans: BOOST_PLANS,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch visibility status' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'partner/visibility');
   }
 }
 
 // Purchase a promotional visibility boost for the caller's business
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('PARTNER', 'ADMIN');
 
     const body = await req.json();
     const { businessId, plan } = body;
@@ -60,12 +54,10 @@ export async function POST(req: Request) {
       ? await prisma.business.findUnique({ where: { id: businessId } })
       : await prisma.business.findFirst({ where: { ownerId: user.id } });
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    if (!business) throw notFound('Business not found');
 
     if (user.role !== 'ADMIN' && business.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
     const selectedPlan = BOOST_PLANS[plan];
@@ -87,7 +79,7 @@ export async function POST(req: Request) {
       featuredUntil: updated.featuredUntil,
       message: `${selectedPlan.label} activated through ${featuredUntil.toLocaleDateString()}.`,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to purchase visibility boost' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'partner/visibility');
   }
 }

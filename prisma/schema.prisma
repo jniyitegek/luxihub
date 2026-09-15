@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {
@@ -45,7 +46,7 @@ model Business {
   currency           String    @default("RWF")
   status             String    @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
   certificationBadge String    @default("LUXE_VERIFIED") // LUXE_VERIFIED, GOLD_STANDARD, ECO_SUSTAINABLE, NONE
-  ratingAvg          Float     @default(4.9)
+  ratingAvg          Float     @default(0)
   reviewCount        Int       @default(0)
   isFeatured         Boolean   @default(false)
   subscriptionTier   String    @default("STANDARD") // STANDARD, CERTIFIED, ELITE
@@ -53,7 +54,7 @@ model Business {
   phone              String?
   email              String?
   website            String?
-  responseRate       Int       @default(98) // Percentage
+  responseRate       Int       @default(0) // Percentage of guest enquiries answered
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -63,6 +64,12 @@ model Business {
   audits             QAAudit[]
   subscriptions      PartnerSubscription[]
   enrollments        TrainingEnrollment[]
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([location])
+  @@index([status])
+  @@index([isFeatured, ratingAvg])
 }
 
 model ServiceOffering {
@@ -82,6 +89,8 @@ model ServiceOffering {
   createdAt    DateTime  @default(now())
 
   bookings     Booking[]
+
+  @@index([businessId])
 }
 
 model Booking {
@@ -112,6 +121,12 @@ model Booking {
 
   payment           Payment?
   review            Review?
+
+  @@index([customerId])
+  @@index([businessId])
+  @@index([serviceOfferingId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Payment {
@@ -119,14 +134,19 @@ model Payment {
   bookingId       String    @unique
   booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   transactionRef  String    @unique
+  providerRef     String?   // Reference returned by the upstream gateway
   provider        String    // MTN_MOMO, AIRTEL_MONEY, CARD, FLUTTERWAVE
   amount          Float
   currency        String    @default("RWF")
-  status          String    @default("SUCCESS") // INITIATED, SUCCESS, FAILED
+  status          String    @default("INITIATED") // INITIATED, PENDING, SUCCESS, FAILED
   payerPhone      String?
   channelResponse String?
-  paidAt          DateTime? @default(now())
+  paidAt          DateTime?
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt @default(now())
+
+  @@index([status])
+  @@index([providerRef])
 }
 
 model Review {
@@ -148,6 +168,10 @@ model Review {
   partnerRepliedAt  DateTime?
   isVerified        Boolean   @default(true)
   createdAt         DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([createdAt])
 }
 
 model QAAudit {
@@ -161,6 +185,8 @@ model QAAudit {
   inspectionItems  String    @default("[]") // JSON string of checked criteria
   auditDate        DateTime  @default(now())
   createdAt        DateTime  @default(now())
+
+  @@index([businessId, auditDate])
 }
 
 model TrainingCourse {
@@ -196,6 +222,9 @@ model TrainingEnrollment {
   completedAt       DateTime?
   certificateNumber String?
   createdAt         DateTime       @default(now())
+
+  @@index([courseId])
+  @@index([businessId])
 }
 
 model SupportTicket {
@@ -211,6 +240,9 @@ model SupportTicket {
   responses   String    @default("[]") // JSON array of response messages
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model LoyaltyTransaction {
@@ -222,13 +254,15 @@ model LoyaltyTransaction {
   type        String    // EARNED, REDEEMED
   description String
   createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model PartnerSubscription {
   id              String    @id @default(cuid())
   businessId      String
   business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  planTier        String    // STANDARD, LUXE_CERTIFIED, ELITE_AMBASSADOR
+  planTier        String    // STANDARD, CERTIFIED, ELITE
   billingCycle    String    @default("MONTHLY") // MONTHLY, ANNUAL
   price           Float
   currency        String    @default("RWF")
@@ -236,6 +270,8 @@ model PartnerSubscription {
   nextBillingDate DateTime
   perks           String    @default("[]") // JSON string array
   createdAt       DateTime  @default(now())
+
+  @@index([businessId, status])
 }
 
 model ServiceRating {
@@ -252,3 +288,27 @@ model ServiceRating {
   @@index([ipHash])
 }
 
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  source         String    @default("FOOTER") // FOOTER, CHECKOUT, CAMPAIGN
+  status         String    @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED
+  confirmedAt    DateTime?
+  unsubscribedAt DateTime?
+  ipHash         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String   // MTN_MOMO, FLUTTERWAVE
+  externalId  String
+  payload     String
+  processedAt DateTime @default(now())
+
+  @@unique([provider, externalId])
+}

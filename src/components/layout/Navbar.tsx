@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { publicConfig } from '@/lib/publicConfig';
 import { 
   Search, 
   ChevronDown, 
@@ -249,7 +250,8 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                       <ArrowRight className="w-4 h-4 text-sky-400" />
                     </Link>
 
-                    {/* Switch Profile Section */}
+                    {/* Switch Profile Section — demo environments only */}
+                    {publicConfig.demoMode && (
                     <div className="pt-2">
                       <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-slate-500 uppercase">Switch Demo Account</div>
                       {[
@@ -272,6 +274,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                         </button>
                       ))}
                     </div>
+                    )}
 
                     {/* Logout Option */}
                     <div className="pt-2 border-t border-white/10">

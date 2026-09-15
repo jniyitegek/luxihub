@@ -1,51 +1,58 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { forbidden, handleRouteError, notFound, parseBody, requireRole } from '@/lib/api';
 
-// Add a new suite/package/service offering to an existing business listing
+export const dynamic = 'force-dynamic';
+
+const createSchema = z.object({
+  title: z.string().trim().min(3, 'Give the package a title').max(140),
+  description: z.string().trim().min(10, 'Describe what the package includes').max(2000),
+  price: z.coerce.number().positive('Enter a price').max(100_000_000),
+  capacity: z.coerce.number().int().min(1).max(50).default(2),
+  unit: z.enum(['per_night', 'per_person', 'per_table', 'per_tour']).default('per_night'),
+  currency: z.string().trim().length(3).default('RWF'),
+  duration: z.string().trim().max(80).optional(),
+  images: z.array(z.string().url()).max(20).default([]),
+  inclusions: z.array(z.string().trim().max(200)).max(40).default([]),
+});
+
+/** Adds a suite, table or expedition package to a listing the caller owns. */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('PARTNER', 'ADMIN');
 
-    const { id } = params;
-    const business = await prisma.business.findUnique({ where: { id } });
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    const business = await prisma.business.findUnique({ where: { id: params.id }, select: { id: true, ownerId: true } });
+    if (!business) throw notFound('Business not found');
     if (user.role !== 'ADMIN' && business.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
-    const body = await req.json();
-    const { title, description, price, capacity = 2, unit = 'per_night', currency = 'RWF', duration, images, inclusions } = body;
-
-    if (!title || !description || price === undefined) {
-      return NextResponse.json({ error: 'Missing required offering fields' }, { status: 400 });
-    }
+    const input = await parseBody(req, createSchema);
 
     const offering = await prisma.serviceOffering.create({
       data: {
-        businessId: id,
-        title,
-        description,
-        price: parseFloat(price),
-        capacity: parseInt(capacity.toString(), 10),
-        unit,
-        currency,
-        duration: duration || null,
-        images: JSON.stringify(images || []),
-        inclusions: JSON.stringify(inclusions || []),
+        businessId: business.id,
+        title: input.title,
+        description: input.description,
+        price: input.price,
+        capacity: input.capacity,
+        unit: input.unit,
+        currency: input.currency,
+        duration: input.duration || null,
+        images: JSON.stringify(input.images),
+        inclusions: JSON.stringify(input.inclusions),
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      offering: { ...offering, images: JSON.parse(offering.images), inclusions: JSON.parse(offering.inclusions) },
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create offering' }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        offering: { ...offering, images: input.images, inclusions: input.inclusions },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    return handleRouteError(error, 'businesses/[id]/offerings POST');
   }
 }

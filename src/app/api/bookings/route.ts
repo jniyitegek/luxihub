@@ -1,32 +1,26 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { badRequest, handleRouteError, notFound, parseBody, requireUser } from '@/lib/api';
 import { generateRef } from '@/lib/utils';
+import { formatMsisdn, isRwandanMobile } from '@/lib/payments/phone';
 
-export async function GET(req: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await requireUser();
 
-    let whereClause: any = {};
-    if (user.role === 'CUSTOMER') {
-      whereClause.customerId = user.id;
-    } else if (user.role === 'PARTNER') {
-      whereClause.business = {
-        ownerId: user.id,
-      };
-    } // If ADMIN, whereClause stays empty to see all platform bookings
+    const whereClause =
+      user.role === 'CUSTOMER'
+        ? { customerId: user.id }
+        : user.role === 'PARTNER'
+          ? { business: { ownerId: user.id } }
+          : {}; // ADMIN sees every booking on the platform
 
     const bookings = await prisma.booking.findMany({
       where: whereClause,
-      include: {
-        business: true,
-        serviceOffering: true,
-        payment: true,
-        review: true,
-      },
+      include: { business: true, serviceOffering: true, payment: true, review: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -45,94 +39,108 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({ success: true, bookings: formatted });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch bookings' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'bookings GET');
   }
 }
 
+const isoDate = z.coerce.date({ invalid_type_error: 'Enter a valid date' });
+
+const createSchema = z.object({
+  serviceOfferingId: z.string().min(1, 'Select a package to book'),
+  checkInDate: isoDate,
+  checkOutDate: isoDate,
+  guests: z.coerce.number().int().min(1).max(50).default(1),
+  depositOnly: z.boolean().default(false),
+  specialRequests: z.string().trim().max(1000).optional(),
+  guestName: z.string().trim().min(2).max(80).optional(),
+  guestEmail: z.string().trim().toLowerCase().email().optional(),
+  guestPhone: z.string().trim().max(32).optional(),
+});
+
+const COMMISSION_RATE = 0.1;
+const DEPOSIT_RATE = 0.3;
+
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required to make a booking' }, { status: 401 });
-    }
+    const user = await requireUser();
+    const input = await parseBody(req, createSchema);
 
-    const body = await req.json();
-    const {
-      businessId,
-      serviceOfferingId,
-      checkInDate,
-      checkOutDate,
-      guests = 1,
-      depositOnly = false,
-      specialRequests,
-      guestName,
-      guestEmail,
-      guestPhone,
-    } = body;
-
-    if (!businessId || !serviceOfferingId || !checkInDate || !checkOutDate) {
-      return NextResponse.json({ error: 'Missing required reservation fields' }, { status: 400 });
-    }
-
-    const serviceOffering = await prisma.serviceOffering.findUnique({
-      where: { id: serviceOfferingId },
+    // The business is resolved from the offering rather than accepted from the
+    // client, so a reservation can never be attributed to a different listing
+    // than the one whose price is being charged.
+    const offering = await prisma.serviceOffering.findUnique({
+      where: { id: input.serviceOfferingId },
       include: { business: true },
     });
 
-    if (!serviceOffering) {
-      return NextResponse.json({ error: 'Service offering not found' }, { status: 404 });
+    if (!offering) throw notFound('That package is no longer available');
+    if (!offering.isAvailable) throw badRequest('That package is not currently open for booking');
+    if (offering.business.status !== 'VERIFIED') {
+      throw badRequest('This listing is not accepting reservations at the moment');
+    }
+    if (input.guests > offering.capacity) {
+      throw badRequest(`This package accommodates up to ${offering.capacity} guest(s)`);
     }
 
-    const checkIn = new Date(checkInDate);
-    const checkOut = new Date(checkOutDate);
-    const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const checkIn = startOfDay(input.checkInDate);
+    const checkOut = startOfDay(input.checkOutDate);
+    const today = startOfDay(new Date());
 
-    let totalAmount = serviceOffering.price;
-    if (serviceOffering.unit === 'per_night') {
-      totalAmount = serviceOffering.price * diffDays;
-    } else if (serviceOffering.unit === 'per_person') {
-      totalAmount = serviceOffering.price * guests;
+    if (checkIn < today) throw badRequest('Check-in cannot be in the past');
+    if (offering.unit === 'per_night' && checkOut <= checkIn) {
+      throw badRequest('Check-out must be after check-in');
+    }
+    if (checkOut < checkIn) throw badRequest('Check-out cannot be before check-in');
+
+    const nights = Math.max(1, Math.round((checkOut.getTime() - checkIn.getTime()) / 86_400_000));
+    const totalAmount = Math.round(
+      offering.unit === 'per_night'
+        ? offering.price * nights
+        : offering.unit === 'per_person'
+          ? offering.price * input.guests
+          : offering.price
+    );
+
+    const guestPhone = input.guestPhone || user.phone || '';
+    if (guestPhone && !isRwandanMobile(guestPhone) && !/^\+\d{7,15}$/.test(guestPhone.replace(/[\s-]/g, ''))) {
+      throw badRequest('Enter a valid contact number, e.g. +250 788 000 000');
     }
 
-    const depositAmount = depositOnly ? Math.round(totalAmount * 0.3) : totalAmount;
-    const bookingRef = generateRef('LUX');
+    const commissionAmount = Math.round(totalAmount * COMMISSION_RATE);
 
-    // 10% platform booking commission (Business Model: Booking Commission)
-    const commissionRate = 0.1;
-    const commissionAmount = Math.round(totalAmount * commissionRate);
-    const payoutAmount = totalAmount - commissionAmount;
-
-    const newBooking = await prisma.booking.create({
+    const booking = await prisma.booking.create({
       data: {
-        bookingRef,
+        bookingRef: generateRef('LUX'),
         customerId: user.id,
-        businessId,
-        serviceOfferingId,
+        businessId: offering.businessId,
+        serviceOfferingId: offering.id,
         checkInDate: checkIn,
         checkOutDate: checkOut,
-        guests: parseInt(guests.toString(), 10),
+        guests: input.guests,
         totalAmount,
-        depositAmount,
+        depositAmount: input.depositOnly ? Math.round(totalAmount * DEPOSIT_RATE) : totalAmount,
         commissionAmount,
-        payoutAmount,
-        currency: serviceOffering.currency || 'RWF',
+        payoutAmount: totalAmount - commissionAmount,
+        currency: offering.currency || 'RWF',
         status: 'PENDING',
         paymentStatus: 'UNPAID',
-        specialRequests: specialRequests || null,
-        guestName: guestName || user.name,
-        guestEmail: guestEmail || user.email,
-        guestPhone: guestPhone || user.phone || '+250 788 000 000',
+        specialRequests: input.specialRequests || null,
+        guestName: input.guestName || user.name,
+        guestEmail: input.guestEmail || user.email,
+        guestPhone: isRwandanMobile(guestPhone) ? formatMsisdn(guestPhone) : guestPhone,
       },
-      include: {
-        business: true,
-        serviceOffering: true,
-      },
+      include: { business: true, serviceOffering: true },
     });
 
-    return NextResponse.json({ success: true, booking: newBooking });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Booking creation failed' }, { status: 500 });
+    return NextResponse.json({ success: true, booking }, { status: 201 });
+  } catch (error) {
+    return handleRouteError(error, 'bookings POST');
   }
+}
+
+function startOfDay(date: Date): Date {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
 }

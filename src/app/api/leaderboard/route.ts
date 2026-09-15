@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { handleRouteError } from '@/lib/api';
+
+const PLACEHOLDER_IMAGE = '/images/listing-placeholder.svg';
 
 // Must be computed fresh on every request — this is the live leaderboard.
 export const dynamic = 'force-dynamic';
@@ -57,13 +60,21 @@ export async function GET() {
             createdAt: newest.createdAt.toISOString(),
             isRealReview: true,
           }
-        : {
-            quote: `Guests consistently rate ${b.name} ${b.ratingAvg.toFixed(1)}★ across ${b.reviewCount} verified stays.`,
-            reviewerName: 'Verified Guests',
-            rating: Math.round(b.ratingAvg),
-            createdAt: b.updatedAt.toISOString(),
-            isRealReview: false,
-          };
+        : b.reviewCount > 0
+          ? {
+              quote: `Guests consistently rate ${b.name} ${b.ratingAvg.toFixed(1)}★ across ${b.reviewCount} verified stays.`,
+              reviewerName: 'Verified Guests',
+              rating: Math.round(b.ratingAvg),
+              createdAt: b.updatedAt.toISOString(),
+              isRealReview: false,
+            }
+          : {
+              quote: 'Newly certified listing — no verified guest reviews yet.',
+              reviewerName: 'Higa Lux Quality Assurance',
+              rating: 0,
+              createdAt: b.updatedAt.toISOString(),
+              isRealReview: false,
+            };
 
       return {
         id: b.id,
@@ -71,7 +82,7 @@ export async function GET() {
         name: b.name,
         type: b.type,
         location: b.location,
-        image: images[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        image: images[0] || PLACEHOLDER_IMAGE,
         certificationBadge: b.certificationBadge,
         ratingAvg: b.ratingAvg,
         reviewCount: b.reviewCount,
@@ -93,7 +104,7 @@ export async function GET() {
     (boards as any).ALL = [...scored].sort((a, b) => b.liveScore - a.liveScore).slice(0, ENTRIES_PER_BOARD);
 
     return NextResponse.json({ success: true, updatedAt: new Date().toISOString(), boards });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to load leaderboard' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'leaderboard GET');
   }
 }

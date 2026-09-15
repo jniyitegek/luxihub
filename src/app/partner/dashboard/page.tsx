@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { BusinessListing, BookingDto } from '@/lib/types';
-import { formatRwf, formatUsd } from '@/lib/utils';
+import { formatRwf } from '@/lib/utils';
 import { CertificationBadge } from '@/components/ui/CertificationBadge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -34,6 +34,7 @@ import { DashboardHeader } from '@/components/layout/DashboardHeader';
 export default function PartnerDashboardPage() {
   const { user } = useAuth();
   const [business, setBusiness] = useState<BusinessListing | null>(null);
+  const [businesses, setBusinesses] = useState<BusinessListing[]>([]);
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,18 +48,28 @@ export default function PartnerDashboardPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchPartnerData = async () => {
+    if (!user) return;
+    setLoading(true);
     try {
-      const res = await fetch('/api/businesses');
+      const res = await fetch('/api/businesses', { cache: 'no-store' });
       const data = await res.json();
-      if (data.businesses && data.businesses.length > 0) {
-        const myBiz = data.businesses.find((b: any) => b.ownerId === user?.id) || data.businesses[0];
-        setBusiness(myBiz);
 
-        const bRes = await fetch('/api/bookings');
+      // Only ever show a listing this partner actually owns. Falling back to
+      // the first listing on the platform would expose another partner's
+      // revenue, reservations and guest contact details.
+      const owned: BusinessListing[] = (data.businesses ?? []).filter(
+        (b: BusinessListing) => b.ownerId === user.id
+      );
+
+      setBusinesses(owned);
+      setBusiness((current) => owned.find((b) => b.id === current?.id) ?? owned[0] ?? null);
+
+      if (owned.length > 0) {
+        const bRes = await fetch('/api/bookings', { cache: 'no-store' });
         const bData = await bRes.json();
-        if (bData.bookings) {
-          setBookings(bData.bookings);
-        }
+        setBookings(bData.bookings ?? []);
+      } else {
+        setBookings([]);
       }
     } catch (e) {
       console.error('Failed to load partner data:', e);
@@ -69,7 +80,8 @@ export default function PartnerDashboardPage() {
 
   useEffect(() => {
     fetchPartnerData();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleCreateOffering = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,26 +114,98 @@ export default function PartnerDashboardPage() {
     }
   };
 
-  const totalRevenue = bookings.reduce((sum, b) => (b.paymentStatus === 'FULLY_PAID' ? sum + b.totalAmount : sum), 0);
-  const totalPayout = bookings.reduce((sum, b) => (b.paymentStatus === 'FULLY_PAID' ? sum + b.payoutAmount : sum), 0);
+  // Admins receive every booking on the platform from /api/bookings, so the
+  // list is narrowed to the listing currently in view.
+  const listingBookings = business ? bookings.filter((b) => b.businessId === business.id) : [];
+
+  const totalPayout = listingBookings.reduce((sum, b) => (b.paymentStatus === 'FULLY_PAID' ? sum + b.payoutAmount : sum), 0);
 
   const now = new Date();
-  const thisMonthRevenue = bookings
+  const thisMonthRevenue = listingBookings
     .filter((b) => b.paymentStatus === 'FULLY_PAID' && new Date(b.createdAt).getMonth() === now.getMonth() && new Date(b.createdAt).getFullYear() === now.getFullYear())
     .reduce((sum, b) => sum + b.totalAmount, 0);
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthRevenue = bookings
+  const lastMonthRevenue = listingBookings
     .filter((b) => b.paymentStatus === 'FULLY_PAID' && new Date(b.createdAt).getMonth() === lastMonthDate.getMonth() && new Date(b.createdAt).getFullYear() === lastMonthDate.getFullYear())
     .reduce((sum, b) => sum + b.totalAmount, 0);
   const revenueTrendPct = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : null;
 
+  if (loading) {
+    return (
+      <div className="space-y-6" aria-busy="true">
+        <div className="h-24 rounded-3xl bg-slate-200/70 animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-36 rounded-3xl bg-slate-200/70 animate-pulse" />
+          ))}
+        </div>
+        <div className="h-64 rounded-3xl bg-slate-200/70 animate-pulse" />
+      </div>
+    );
+  }
+
+  // A partner with no listing of their own sees an onboarding prompt rather
+  // than somebody else's business.
+  if (!business) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center">
+          <Building2 className="w-8 h-8 text-sky-600" />
+        </div>
+        <div className="space-y-2">
+          <Text as="h1" variant="h2" color="dark" className="text-2xl">
+            No listing linked to your account yet
+          </Text>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Once your property is registered and linked to {user?.email ?? 'your account'}, your reservations, payouts
+            and quality assurance scores appear here. Our partnerships team completes the onboarding with you.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="mailto:partners@higalux.rw?subject=Higa%20Lux%20partner%20onboarding"
+            className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-colors"
+          >
+            Contact the partnerships team
+          </a>
+          <Link
+            href="/explore"
+            className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 text-xs font-bold border border-slate-200 transition-colors"
+          >
+            Browse the directory
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-10">
 
+      {businesses.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Your listings:</span>
+          {businesses.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => setBusiness(b)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                b.id === business.id
+                  ? 'bg-sky-600 border-sky-600 text-white shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              {b.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <DashboardHeader
-        title={business ? business.name : 'The Retreat by Heaven'}
-        subtitle={`RDB Accredited 5-Star Property • Managed by ${user?.name || 'Jean-Paul N.'}`}
-        badges={business && <CertificationBadge badge={business.certificationBadge} size="sm" />}
+        title={business.name}
+        subtitle={`Managed by ${user?.name ?? 'your team'}`}
+        badges={<CertificationBadge badge={business.certificationBadge} size="sm" />}
         actions={
           <>
             <Link
@@ -179,10 +263,10 @@ export default function PartnerDashboardPage() {
               <ShieldCheck className="w-4 h-4 text-sky-600" />
             </div>
             <div className="text-3xl font-extrabold text-slate-900">
-              {business?.qualityScore != null ? `${business.qualityScore}%` : 'Pending'}
+              {business.qualityScore != null ? `${business.qualityScore}%` : 'Pending'}
             </div>
             <div className="text-[11px] text-slate-500 font-medium">
-              {business?.qualityScore != null ? 'Gold Standard Benchmark' : 'Awaiting first 40-point audit'}
+              {business.qualityScore != null ? 'Gold Standard Benchmark' : 'Awaiting first 40-point audit'}
             </div>
           </Card>
 
@@ -192,10 +276,11 @@ export default function PartnerDashboardPage() {
               <Star className="w-4 h-4 text-sky-600 fill-sky-500" />
             </div>
             <div className="text-3xl font-extrabold text-slate-900">
-              {business ? business.ratingAvg.toFixed(2) : '—'} <span className="text-xs font-normal text-slate-400">/ 5.0</span>
+              {business.reviewCount > 0 ? business.ratingAvg.toFixed(2) : '—'}{' '}
+              <span className="text-xs font-normal text-slate-400">/ 5.0</span>
             </div>
             <div className="text-[11px] text-slate-500 font-medium">
-              {business?.reviewCount ?? 0} verified traveler reviews
+              {business.reviewCount ? `${business.reviewCount} verified traveler reviews` : 'No verified reviews yet'}
             </div>
           </Card>
 
@@ -204,7 +289,9 @@ export default function PartnerDashboardPage() {
               <span>Guest Response Rate</span>
               <Clock className="w-4 h-4 text-sky-600" />
             </div>
-            <div className="text-3xl font-extrabold text-slate-900">{business?.responseRate ?? '—'}%</div>
+            <div className="text-3xl font-extrabold text-slate-900">
+              {business.responseRate ? `${business.responseRate}%` : '—'}
+            </div>
             <div className="text-[11px] text-sky-700 font-extrabold">
               Based on verified guest inquiries
             </div>
@@ -222,16 +309,16 @@ export default function PartnerDashboardPage() {
                 <CalendarCheck className="w-6 h-6 text-sky-600" />
                 <span>Active Guest Reservations</span>
               </Text>
-              <span className="text-xs text-slate-500 font-extrabold">{bookings.length} Total Bookings</span>
+              <span className="text-xs text-slate-500 font-extrabold">{listingBookings.length} Total Bookings</span>
             </div>
 
             <div className="space-y-4">
-              {bookings.length === 0 ? (
+              {listingBookings.length === 0 ? (
                 <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm text-center text-xs text-slate-500 font-medium">
                   No active bookings yet.
                 </div>
               ) : (
-                bookings.map((b) => (
+                listingBookings.map((b) => (
                   <Card key={b.id} variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-6 space-y-3 hover:shadow-xl">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
@@ -289,7 +376,7 @@ export default function PartnerDashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {business?.offerings?.map((off) => (
+                {business.offerings?.map((off) => (
                   <div key={off.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                     <div className="flex justify-between text-xs font-bold text-slate-900">
                       <span>{off.title}</span>

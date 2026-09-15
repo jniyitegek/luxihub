@@ -1,50 +1,39 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { handleRouteError, notFound, parseBody, parseQuery, requireRole } from '@/lib/api';
 import { evaluateBusinessQuality, QA_STANDARDS_CHECKLIST } from '@/lib/qualityEngine';
+
+export const dynamic = 'force-dynamic';
+
+const querySchema = z.object({ businessId: z.string().trim().min(1).optional() });
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('businessId');
-
+    const { businessId } = parseQuery(req, querySchema);
     if (!businessId) {
-      return NextResponse.json({ checklist: QA_STANDARDS_CHECKLIST });
+      return NextResponse.json({ success: true, checklist: QA_STANDARDS_CHECKLIST });
     }
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      include: {
-        reviews: true,
-        audits: {
-          orderBy: { auditDate: 'desc' },
-          take: 5,
-        },
-      },
+      include: { audits: { orderBy: { auditDate: 'desc' }, take: 5 } },
     });
+    if (!business) throw notFound('Business not found');
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
-
-    const cleanlinessAvg = business.reviews.length
-      ? business.reviews.reduce((acc, r) => acc + r.cleanlinessRating, 0) / business.reviews.length
-      : 5;
-    const serviceAvg = business.reviews.length
-      ? business.reviews.reduce((acc, r) => acc + r.serviceRating, 0) / business.reviews.length
-      : 5;
-    const hospitalityAvg = business.reviews.length
-      ? business.reviews.reduce((acc, r) => acc + r.hospitalityRating, 0) / business.reviews.length
-      : 5;
+    const criteria = await prisma.review.aggregate({
+      where: { businessId },
+      _avg: { cleanlinessRating: true, serviceRating: true, hospitalityRating: true },
+    });
 
     const evaluation = evaluateBusinessQuality({
       reviewCount: business.reviewCount,
       ratingAvg: business.ratingAvg,
-      cleanlinessAvg,
-      serviceAvg,
-      hospitalityAvg,
+      cleanlinessAvg: criteria._avg.cleanlinessRating ?? 0,
+      serviceAvg: criteria._avg.serviceRating ?? 0,
+      hospitalityAvg: criteria._avg.hospitalityRating ?? 0,
       responseRate: business.responseRate,
-      auditChecklistScore: business.audits[0]?.score || 95,
+      auditChecklistScore: business.audits[0]?.score,
     });
 
     return NextResponse.json({
@@ -53,56 +42,86 @@ export async function GET(req: Request) {
       businessName: business.name,
       currentBadge: business.certificationBadge,
       evaluation,
-      recentAudits: business.audits,
+      recentAudits: business.audits.map((a) => ({ ...a, inspectionItems: JSON.parse(a.inspectionItems || '[]') })),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'QA assessment failed' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'quality-engine/audit GET');
   }
+}
+
+const auditSchema = z.object({
+  businessId: z.string().min(1),
+  score: z.coerce.number().int().min(0, 'Score must be between 0 and 100').max(100, 'Score must be between 0 and 100'),
+  notes: z.string().trim().max(4000).optional(),
+  // Accepts both shapes the auditor tools produce: a per-category subtotal
+  // from the inspection form, and a per-criterion pass/fail line from the
+  // full 40-point checklist.
+  inspectionItems: z
+    .array(
+      z.object({
+        category: z.string().trim().max(80),
+        item: z.string().trim().max(300).optional(),
+        passed: z.boolean().optional(),
+        score: z.coerce.number().min(0).max(100),
+        max: z.coerce.number().min(0).max(100).optional(),
+      })
+    )
+    .max(80)
+    .default([]),
+});
+
+/**
+ * Records an official inspection. The badge is always derived from the score
+ * server-side so an auditor cannot grant a certification the score does not
+ * support.
+ */
+function badgeForScore(score: number) {
+  if (score >= 95) return 'GOLD_STANDARD';
+  if (score >= 80) return 'LUXE_VERIFIED';
+  if (score >= 70) return 'ECO_SUSTAINABLE';
+  return 'NONE';
 }
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized. QA Auditor (Admin) role required.' }, { status: 403 });
-    }
+    const user = await requireRole('ADMIN');
+    const input = await parseBody(req, auditSchema);
 
-    const body = await req.json();
-    const { businessId, score, notes, inspectionItems } = body;
+    const business = await prisma.business.findUnique({ where: { id: input.businessId }, select: { id: true } });
+    if (!business) throw notFound('Business not found');
 
-    const numericScore = parseInt((score ?? '').toString(), 10);
-    if (!businessId || score === undefined || Number.isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
-      return NextResponse.json({ error: 'Missing or invalid required audit parameters' }, { status: 400 });
-    }
+    const badgeGranted = badgeForScore(input.score);
 
-    // Badge is derived server-side from the audit score, never trusted from the client.
-    const badgeGranted =
-      numericScore >= 95 ? 'GOLD_STANDARD' : numericScore >= 80 ? 'LUXE_VERIFIED' : numericScore >= 70 ? 'ECO_SUSTAINABLE' : 'NONE';
+    const audit = await prisma.$transaction(async (tx) => {
+      const created = await tx.qAAudit.create({
+        data: {
+          businessId: business.id,
+          auditorName: user.name,
+          score: input.score,
+          badgeGranted,
+          notes: input.notes || 'Official Higa Lux Rwandan quality assurance audit completed.',
+          inspectionItems: JSON.stringify(input.inspectionItems),
+          auditDate: new Date(),
+        },
+      });
 
-    // Create Audit record
-    const audit = await prisma.qAAudit.create({
-      data: {
-        businessId,
-        auditorName: user.name,
-        score: numericScore,
-        badgeGranted,
-        notes: notes || 'Official Rwandan Higa Lux Quality Assurance audit completed.',
-        inspectionItems: JSON.stringify(inspectionItems || []),
-        auditDate: new Date(),
-      },
+      await tx.business.update({
+        where: { id: business.id },
+        data: {
+          certificationBadge: badgeGranted,
+          status: badgeGranted === 'NONE' ? 'PENDING' : 'VERIFIED',
+        },
+      });
+
+      return created;
     });
 
-    // Update business badge & status automatically
-    await prisma.business.update({
-      where: { id: businessId },
-      data: {
-        certificationBadge: badgeGranted,
-        status: badgeGranted === 'NONE' ? 'PENDING' : 'VERIFIED',
-      },
+    return NextResponse.json({
+      success: true,
+      audit,
+      message: `QA audit recorded. Certification updated to ${badgeGranted.replace(/_/g, ' ')}.`,
     });
-
-    return NextResponse.json({ success: true, audit, message: `QA Audit completed. Badge updated to ${badgeGranted}` });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Audit execution failed' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'quality-engine/audit POST');
   }
 }

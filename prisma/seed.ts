@@ -6,7 +6,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting Higa Lux database seeding with Rwandan luxury hospitality dataset...');
 
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error(
+      'Refusing to seed a production database. This script deletes every record first. ' +
+        'Set ALLOW_PRODUCTION_SEED=true only if that is genuinely what you intend.'
+    );
+  }
+
   // 1. Clean existing records
+  await prisma.serviceRating.deleteMany();
+  await prisma.newsletterSubscriber.deleteMany();
+  await prisma.webhookEvent.deleteMany();
+  await prisma.loyaltyTransaction.deleteMany();
   await prisma.review.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.booking.deleteMany();
@@ -19,7 +30,10 @@ async function main() {
   await prisma.business.deleteMany();
   await prisma.user.deleteMany();
 
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // Demo credentials. Override with SEED_PASSWORD when seeding a shared
+  // staging environment so the published password is not the live one.
+  const seedPassword = process.env.SEED_PASSWORD || 'password123';
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
 
   // 2. Create Users
   const admin = await prisma.user.create({
@@ -118,6 +132,7 @@ async function main() {
       email: 'reservations@the-retreat.rw',
       website: 'https://www.the-retreat.rw',
       responseRate: 100,
+      subscriptionTier: 'ELITE',
     },
   });
 
@@ -496,6 +511,29 @@ async function main() {
     },
   });
 
+  const mezaTasting = await prisma.serviceOffering.create({
+    data: {
+      businessId: mezaMalonga.id,
+      title: '10-Course Afro-Fusion Gastronomic Safari for Two',
+      description:
+        'Chef Dieuveil Malonga\'s signature ten-course journey through indigenous African grains, herbs and sustainably sourced terroir, served at the open kitchen counter.',
+      capacity: 2,
+      price: 240000,
+      currency: 'RWF',
+      unit: 'per_table',
+      images: JSON.stringify([
+        'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1000&q=80'
+      ]),
+      inclusions: JSON.stringify([
+        '10-course tasting menu',
+        'Bespoke African spirit and wine pairings',
+        'Welcome aperitif at the chef\'s counter',
+        'Signed menu card'
+      ]),
+      isAvailable: true,
+    },
+  });
+
   console.log('✅ Created Service Offerings');
 
   // 5. Create Sample Bookings & Payments
@@ -592,6 +630,120 @@ async function main() {
     },
   });
 
+  const bisateCompleted = await prisma.booking.create({
+    data: {
+      bookingRef: 'LUX-2026-556301',
+      customerId: customer2.id,
+      businessId: bisate.id,
+      serviceOfferingId: bisateVilla.id,
+      checkInDate: new Date('2026-06-12'),
+      checkOutDate: new Date('2026-06-15'),
+      guests: 2,
+      totalAmount: 5550000,
+      depositAmount: 5550000,
+      commissionAmount: 555000,
+      payoutAmount: 4995000,
+      currency: 'RWF',
+      status: 'COMPLETED',
+      paymentStatus: 'FULLY_PAID',
+      specialRequests: 'Gorilla trek scheduled for the second morning; vegetarian menu please.',
+      guestName: 'Sarah Jenkins',
+      guestEmail: 'sarah.jenkins@luxurytravelexec.com',
+      guestPhone: '+1 415 890 1234',
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      bookingId: bisateCompleted.id,
+      transactionRef: 'PAY-CARD-7781204455',
+      provider: 'CARD',
+      amount: 5550000,
+      currency: 'RWF',
+      status: 'SUCCESS',
+      providerRef: 'FLW_REF_7781204455',
+      payerPhone: '+1 415 890 1234',
+      channelResponse: '{"status":"SUCCESS","processor_response":"Approved"}',
+      paidAt: new Date('2026-06-01'),
+    },
+  });
+
+  await prisma.review.create({
+    data: {
+      bookingId: bisateCompleted.id,
+      businessId: bisate.id,
+      customerId: customer2.id,
+      rating: 5,
+      cleanlinessRating: 5,
+      serviceRating: 5,
+      hospitalityRating: 5,
+      valueRating: 5,
+      title: 'Priceless gorilla trekking experience and royal hospitality',
+      comment:
+        'The spherical villas with views of Mount Bisoke take your breath away. The lodge team organized our gorilla trek effortlessly and had warm fireplace cocktails ready upon our return. 100% deserves the Gold Standard badge.',
+      partnerReply:
+        'Thank you Sarah! Protecting the volcanic mountain gorillas while delivering unmatched Rwandan warmth is our life passion.',
+      partnerRepliedAt: new Date('2026-06-18'),
+      isVerified: true,
+    },
+  });
+
+  const mezaCompleted = await prisma.booking.create({
+    data: {
+      bookingRef: 'LUX-2026-337742',
+      customerId: customer1.id,
+      businessId: mezaMalonga.id,
+      serviceOfferingId: mezaTasting.id,
+      checkInDate: new Date('2026-07-22'),
+      checkOutDate: new Date('2026-07-22'),
+      guests: 2,
+      totalAmount: 240000,
+      depositAmount: 240000,
+      commissionAmount: 24000,
+      payoutAmount: 216000,
+      currency: 'RWF',
+      status: 'COMPLETED',
+      paymentStatus: 'FULLY_PAID',
+      guestName: 'Clarisse Mutoni',
+      guestEmail: 'customer@higalux.rw',
+      guestPhone: '+250 788 123 456',
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      bookingId: mezaCompleted.id,
+      transactionRef: 'PAY-MTN-5520093311',
+      provider: 'MTN_MOMO',
+      amount: 240000,
+      currency: 'RWF',
+      status: 'SUCCESS',
+      providerRef: 'MTN_RW_5520093311',
+      payerPhone: '+250 788 123 456',
+      channelResponse: '{"status":"SUCCESSFUL","financialTransactionId":"5520093311"}',
+      paidAt: new Date('2026-07-22'),
+    },
+  });
+
+  await prisma.review.create({
+    data: {
+      bookingId: mezaCompleted.id,
+      businessId: mezaMalonga.id,
+      customerId: customer1.id,
+      rating: 5,
+      cleanlinessRating: 5,
+      serviceRating: 5,
+      hospitalityRating: 5,
+      valueRating: 4,
+      title: 'A 10-course culinary masterwork of African terroir',
+      comment:
+        'Chef Dieuveil Malonga has created something peerless. The indigenous grain pairings and Rwandan artisanal spirit flights were on par with 3-star Michelin establishments in Europe.',
+      partnerReply: 'Merci Clarisse! Celebrating African gastronomy at the highest echelon is our collective mission.',
+      partnerRepliedAt: new Date('2026-07-26'),
+      isVerified: true,
+    },
+  });
+
   // 7. QA Audits
   await prisma.qAAudit.create({
     data: {
@@ -679,9 +831,9 @@ async function main() {
   await prisma.partnerSubscription.create({
     data: {
       businessId: theRetreat.id,
-      planTier: 'ELITE_AMBASSADOR',
+      planTier: 'ELITE',
       billingCycle: 'ANNUAL',
-      price: 1200000,
+      price: 4500000,
       currency: 'RWF',
       status: 'ACTIVE',
       nextBillingDate: new Date('2027-01-01'),
@@ -716,7 +868,27 @@ async function main() {
     },
   });
 
+  // 11. Recompute rating aggregates from the reviews that actually exist, so no
+  // listing advertises a review count it cannot show.
+  for (const business of await prisma.business.findMany({ select: { id: true } })) {
+    const stats = await prisma.review.aggregate({
+      where: { businessId: business.id },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    await prisma.business.update({
+      where: { id: business.id },
+      data: {
+        ratingAvg: Number((stats._avg.rating ?? 0).toFixed(2)),
+        reviewCount: stats._count._all,
+      },
+    });
+  }
+
+  console.log('✅ Recomputed rating aggregates from seeded reviews');
+
   console.log('🎉 Higa Lux database seeding completed successfully!');
+  console.log(`   Demo sign-in password: ${seedPassword}`);
 }
 
 main()

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { publicConfig } from '@/lib/publicConfig';
+import { initialsFor } from '@/lib/initials';
 import {
   Building2,
   UtensilsCrossed,
@@ -22,6 +24,8 @@ const BROWSE_ITEMS = [
   { name: 'Dining', href: '/explore?type=RESTAURANT', icon: UtensilsCrossed },
 ];
 
+// Seeded identities behind the demo role switcher. The switcher is hidden
+// unless demo mode is on, and the API refuses the call in production.
 const DEMO_ACCOUNTS = [
   { role: 'CUSTOMER' as const, initials: 'CM', name: 'Clarisse Mutoni', sub: 'Verified Traveler' },
   { role: 'PARTNER' as const, initials: 'JP', name: 'Jean-Paul (The Retreat)', sub: 'Hotel Owner' },
@@ -55,7 +59,7 @@ export function Sidebar() {
 
   const isPortalActive = pathname.startsWith('/admin') || pathname.startsWith('/partner') || pathname.startsWith('/customer');
 
-  const initials = user?.role === 'ADMIN' ? 'VU' : user?.role === 'PARTNER' ? 'JP' : 'CM';
+  const initials = initialsFor(user?.name);
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0B1B36] text-white">
@@ -120,10 +124,12 @@ export function Sidebar() {
       <div className="relative px-3 py-4 border-t border-white/10">
         {profileMenuOpen && user && (
           <div className="absolute bottom-full left-3 right-3 mb-2 rounded-2xl bg-[#0B1528] border border-white/15 shadow-2xl p-2 space-y-1 z-50">
-            <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-white/40 uppercase">
-              Switch Demo Account
-            </div>
-            {DEMO_ACCOUNTS.map((r) => (
+            {publicConfig.demoMode && (
+              <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-white/40 uppercase">
+                Switch Demo Account
+              </div>
+            )}
+            {publicConfig.demoMode && DEMO_ACCOUNTS.map((r) => (
               <button
                 key={r.role}
                 onClick={() => { switchRole(r.role); setProfileMenuOpen(false); }}
