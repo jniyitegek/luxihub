@@ -6,14 +6,14 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { publicConfig } from '@/lib/publicConfig';
-import { 
-  Search, 
-  ChevronDown, 
-  Menu, 
-  X, 
-  User, 
-  LogIn, 
-  LogOut, 
+import {
+  Search,
+  ChevronDown,
+  Menu,
+  X,
+  User,
+  LogIn,
+  LogOut,
   LayoutDashboard,
   Building2,
   UtensilsCrossed,
@@ -26,6 +26,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { RateServiceButton } from '@/components/reviews/RateServiceButton';
+import { Text } from '@/components/ui/Text';
 
 interface NavbarProps {
   onOpenConcierge?: () => void;
@@ -35,7 +36,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, switchRole, logout } = useAuth();
-  
+
   // Dropdown states
   const [browseOpen, setBrowseOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -98,16 +99,16 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 bg-[#FAF9F6] border-b border-slate-200/80 shadow-sm transition-all duration-300">
-      
+
       {/* Primary Header Row — 3-Column Balanced Layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-24">
-          
+
           {/* 1. LEFT: Enlarged Logo */}
           <div className="flex-1 flex items-center justify-start shrink-0">
             <Link href="/" className="flex items-center shrink-0">
               <Image
-                src="/logo/higa_logo_horizontal_blue.png"
+                src="/logo/higalux_logo_final.png"
                 alt="Higa Lux"
                 width={210}
                 height={68}
@@ -119,14 +120,13 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
           {/* 2. CENTER: Primary Nav Items (3 Points Centered with Balanced Spacing) */}
           <nav className="hidden md:flex items-center justify-center gap-8 lg:gap-12 shrink-0">
-            
+
             {/* Nav Point 1: Leaderboard Section Link */}
             <button
               type="button"
               onClick={() => handleNavClick('leaderboard', '/explore')}
-              className={`text-sm font-bold tracking-wide transition-colors py-2 ${
-                pathname === '/explore' ? 'text-sky-600' : 'text-slate-800 hover:text-sky-600'
-              }`}
+              className={`text-sm font-medium transition-colors py-2 ${pathname === '/explore' ? 'text-sky-600' : 'text-slate-800 hover:text-sky-600'
+                }`}
             >
               Leaderboard
             </button>
@@ -136,7 +136,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
               <button
                 type="button"
                 onClick={() => setBrowseOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-sm font-bold tracking-wide text-slate-800 hover:text-sky-600 transition-colors py-2"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-sky-600 transition-colors py-2"
               >
                 <span>Browse</span>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${browseOpen ? 'rotate-180 text-sky-600' : ''}`} />
@@ -147,7 +147,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   <button
                     type="button"
                     onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=HOTEL'); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-bold transition-all text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
                   >
                     <Building2 className="w-4 h-4 text-sky-600" />
                     <span>Stays</span>
@@ -156,7 +156,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   <button
                     type="button"
                     onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=TOUR'); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-bold transition-all text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
                   >
                     <Compass className="w-4 h-4 text-sky-600" />
                     <span>Experiences</span>
@@ -165,7 +165,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   <button
                     type="button"
                     onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=RESTAURANT'); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-bold transition-all text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
                   >
                     <UtensilsCrossed className="w-4 h-4 text-sky-600" />
                     <span>Dining</span>
@@ -178,7 +178,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
             <button
               type="button"
               onClick={() => handleNavClick('why-higalux')}
-              className="text-sm font-bold tracking-wide text-slate-800 hover:text-sky-600 transition-colors py-2"
+              className="text-sm font-medium text-slate-800 hover:text-sky-600 transition-colors py-2"
             >
               Why Higa Lux
             </button>
@@ -187,7 +187,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
           {/* 3. RIGHT: Rate a Service CTA + Static Account Icon + Hamburger Menu */}
           <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4 shrink-0">
-            
+
             {/* Restyled "Rate a Service" Link-Style CTA (Transparent, 2px border, ThumbsUp line icon) */}
             <div className="hidden sm:block">
               <RateServiceButton
@@ -211,7 +211,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
               {/* Account Dropdown */}
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white p-2.5 shadow-2xl border border-slate-200 z-50 space-y-1 animate-in fade-in duration-150">
-                  
+
                   {user ? (
                     <>
                       {/* Logged in User Info */}
@@ -338,7 +338,7 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                   <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                     Secondary Menu
                   </div>
-                  
+
                   <Link
                     href="/partner/academy"
                     onClick={() => setHamburgerOpen(false)}
@@ -388,9 +388,8 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
                         <button
                           key={r.role}
                           onClick={() => { switchRole(r.role); setHamburgerOpen(false); }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            user.role === r.role ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
-                          }`}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors ${user.role === r.role ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                            }`}
                         >
                           <span>{r.name}</span>
                           {user.role === r.role && <Check className="w-3.5 h-3.5 text-sky-600" />}
@@ -414,14 +413,14 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
           >
             {/* Segment 1: Category (Dropdown with Chevron) */}
             <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors border-b md:border-b-0 md:border-r border-slate-200/80">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
                 Category
-              </label>
+              </Text>
               <div className="flex items-center justify-between">
                 <select
                   value={searchCategory}
                   onChange={(e) => setSearchCategory(e.target.value)}
-                  className="w-full bg-transparent text-slate-900 font-bold text-xs focus:outline-none cursor-pointer appearance-none pr-4"
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
                 >
                   <option value="ALL">All Categories</option>
                   <option value="HOTEL">Stays</option>
@@ -434,14 +433,14 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
             {/* Segment 2: Location (Dropdown with Chevron) */}
             <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors border-b md:border-b-0 md:border-r border-slate-200/80">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
                 Location
-              </label>
+              </Text>
               <div className="flex items-center justify-between">
                 <select
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
-                  className="w-full bg-transparent text-slate-900 font-bold text-xs focus:outline-none cursor-pointer appearance-none pr-4"
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
                 >
                   <option value="ALL">Where in Rwanda?</option>
                   <option value="Kigali">Kigali City</option>
@@ -456,14 +455,14 @@ export function Navbar({ onOpenConcierge }: NavbarProps) {
 
             {/* Segment 3: Sort By (Replaces Dates/Guests; Dropdown with Chevron) */}
             <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
                 Sort By
-              </label>
+              </Text>
               <div className="flex items-center justify-between">
                 <select
                   value={searchSort}
                   onChange={(e) => setSearchSort(e.target.value)}
-                  className="w-full bg-transparent text-slate-900 font-bold text-xs focus:outline-none cursor-pointer appearance-none pr-4"
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
                 >
                   <option value="top_rated">Top Rated</option>
                   <option value="most_reviewed">Most Reviewed</option>

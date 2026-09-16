@@ -34,13 +34,13 @@ export function Text({
   );
 
   const variantClasses = {
-    h1: 'text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1]',
-    h2: 'text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-snug',
-    h3: 'text-lg sm:text-xl font-bold tracking-tight',
-    h4: 'text-base font-semibold',
+    h1: 'text-3xl sm:text-4xl lg:text-5xl font-medium tracking-normal leading-[1.1]',
+    h2: 'text-2xl sm:text-3xl lg:text-4xl font-medium tracking-normal leading-snug',
+    h3: 'text-lg sm:text-xl font-medium tracking-normal',
+    h4: 'text-base font-medium',
     body: 'text-sm font-normal leading-relaxed',
     caption: 'text-xs font-normal leading-normal',
-    price: 'text-base sm:text-lg font-extrabold tracking-tight',
+    price: 'text-base sm:text-lg font-medium tracking-normal',
     muted: 'text-xs font-normal text-slate-500',
   };
 

@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Star, CheckCircle2, MessageSquare, Quote } from 'lucide-react';
+import { Star, CheckCircle2, MessageSquare, Quote, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { initialsFor } from '@/lib/initials';
+import { Text } from '@/components/ui/Text';
 
 const ROW_HEIGHT = 108;
 const AVATAR_SIZE = 64;
@@ -29,6 +30,14 @@ interface Testimonial {
 
 function formatMonth(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function getSlot(index: number, active: number, n: number) {
+  if (n === 0) return 0;
+  let diff = (index - active) % n;
+  if (diff > n / 2) diff -= n;
+  if (diff <= -n / 2) diff += n;
+  return diff + 1;
 }
 
 export function TestimonialsSection() {
@@ -86,12 +95,12 @@ export function TestimonialsSection() {
     return (
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
         <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <Text variant="h2" color="dark" className="text-3xl sm:text-4xl">
             Verified Reviews from <span className="text-sky-600">Real Travelers</span>
-          </h2>
-          <p className="text-sm text-slate-600 font-normal">
+          </Text>
+          <Text variant="body" color="muted">
             Only guests who booked and completed their stay through Higa Lux can submit ratings.
-          </p>
+          </Text>
         </div>
 
         {loading ? (
@@ -115,7 +124,10 @@ export function TestimonialsSection() {
 
   const current = reviews[active];
   const n = reviews.length;
-  const railHeight = ROW_HEIGHT * n;
+
+  // We maintain a fixed 3-avatar height arc rail
+  const VISIBLE_SLOTS = 3;
+  const railHeight = ROW_HEIGHT * VISIBLE_SLOTS;
   const topY = ROW_HEIGHT / 2;
   const bottomY = railHeight - ROW_HEIGHT / 2;
   const midY = railHeight / 2;
@@ -127,8 +139,7 @@ export function TestimonialsSection() {
   const railWidth = restX + 12;
 
   // Solve for the single circle passing through the top, center, and bottom
-  // avatar centers, so the arc is a true constant-curvature curve (no
-  // reversal) and every avatar sits exactly on it.
+  // avatar centers, so the arc is a true constant-curvature curve
   const h = midY - topY;
   const centerOffset = (h * h - BULGE * BULGE) / (2 * BULGE);
   const arcRadius = Math.sqrt(centerOffset * centerOffset + h * h);
@@ -137,12 +148,12 @@ export function TestimonialsSection() {
     <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
 
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <Text variant="h2" color="dark" className="text-3xl sm:text-4xl">
           Verified Reviews from <span className="text-sky-600">Real Travelers</span>
-        </h2>
-        <p className="text-sm text-slate-600 font-normal">
+        </Text>
+        <Text variant="body" color="muted">
           Only guests who booked and completed their stay through Higa Lux can submit ratings.
-        </p>
+        </Text>
       </div>
 
       <div className="relative">
@@ -156,13 +167,13 @@ export function TestimonialsSection() {
           <div className="absolute -top-28 -left-28 w-72 h-72 bg-sky-600/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Avatar Rail */}
-          <div className="relative px-6 sm:px-8 py-10 lg:py-14 border-b lg:border-b-0 border-slate-100">
-            <div className="relative" style={{ height: railHeight }}>
+          <div className="relative px-6 sm:px-8 py-10 lg:py-14 border-b lg:border-b-0 border-slate-100 flex items-center justify-center">
+            <div className="relative w-full overflow-hidden" style={{ height: railHeight }}>
               {/* Semicircular bow connecting line — lives in the same coordinate
                   space as the avatar rows below so the curve and the avatar
                   centers share one exact origin. */}
               <svg
-                className="absolute left-0 top-0 pointer-events-none"
+                className="absolute left-0 top-0 pointer-events-none z-0"
                 width={railWidth}
                 height={railHeight}
                 viewBox={`0 0 ${railWidth} ${railHeight}`}
@@ -176,18 +187,24 @@ export function TestimonialsSection() {
               </svg>
 
               {reviews.map((review, index) => {
-                const slot = (index - active + 1 + n) % n;
+                const slot = getSlot(index, active, n);
                 const isActive = slot === 1;
+                const isVisible = slot >= 0 && slot <= 2;
                 const avatarX = isActive ? bulgeX : restX;
                 const bulge = avatarX - AVATAR_SIZE / 2;
+
                 return (
                   <button
                     key={review.id}
                     type="button"
                     onClick={() => handleSelect(index)}
-                    className="absolute left-0 w-full flex items-center gap-3 text-left transition-[top] duration-700 ease-in-out"
+                    tabIndex={isVisible ? 0 : -1}
+                    className={`absolute left-0 w-full flex items-center gap-3 text-left transition-all duration-700 ease-in-out ${
+                      isVisible ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'
+                    }`}
                     style={{ top: slot * ROW_HEIGHT, height: ROW_HEIGHT }}
                     aria-pressed={isActive}
+                    aria-hidden={!isVisible}
                   >
                     <div
                       className={`relative z-10 shrink-0 rounded-full overflow-hidden border-2 bg-sky-100 flex items-center justify-center transition-all duration-700 ease-in-out ${
@@ -198,7 +215,7 @@ export function TestimonialsSection() {
                       {review.avatar ? (
                         <Image src={review.avatar} alt="" fill className="object-cover" sizes="64px" />
                       ) : (
-                        <span className="text-sm font-extrabold text-sky-700">{initialsFor(review.author)}</span>
+                        <User className="w-6 h-6 text-sky-700" />
                       )}
                     </div>
                     <div className="relative z-10 min-w-0 flex-1 transition-all duration-700 ease-in-out">
@@ -246,7 +263,7 @@ export function TestimonialsSection() {
             {/* Quote */}
             <div className="space-y-3">
               <h5 className="text-sm sm:text-base font-bold text-slate-900">{current.title}</h5>
-              <p className="font-serif italic text-lg sm:text-xl text-slate-700 leading-relaxed">
+              <p className="italic text-lg sm:text-xl text-slate-700 leading-relaxed">
                 &ldquo;{current.comment}&rdquo;
               </p>
               <p className="text-xs text-slate-500 font-medium pt-1">

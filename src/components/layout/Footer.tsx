@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Phone, Mail, MapPin, Send, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { NewsletterForm } from './NewsletterForm';
 import { publicConfig } from '@/lib/publicConfig';
+import { Text } from '@/components/ui/Text';
 
 const SOCIAL_LINKS = [
   { icon: Facebook, href: publicConfig.social.facebook, label: 'Facebook' },
@@ -36,12 +37,12 @@ export function Footer() {
                 className="h-8 w-auto mx-auto md:mx-0"
               />
               <div className="space-y-3">
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight tracking-tight">
+                <Text variant="h3" color="white" className="text-2xl sm:text-3xl leading-tight">
                   Subscribe to our newsletter for exclusive Rwandan luxury updates
-                </h3>
-                <p className="text-sm text-sky-100/80 font-normal">
+                </Text>
+                <Text variant="body" className="text-sky-100/80">
                   Get early access to new Gold Standard partners, seasonal rates, and Hospitality Academy openings.
-                </p>
+                </Text>
               </div>
             </div>
 

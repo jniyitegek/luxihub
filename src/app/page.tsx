@@ -6,6 +6,7 @@ import { SearchWidget } from '@/components/landing/SearchWidget';
 import { WhyLuxeHub } from '@/components/landing/WhyLuxeHub';
 import { FeaturedCarousel } from '@/components/landing/FeaturedCarousel';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+import { Text } from '@/components/ui/Text';
 import {
   ShieldCheck,
   ArrowRight,
@@ -56,9 +57,9 @@ export default function HomePage() {
       {/* 1b. Search widget section */}
       <section id="browse" className="w-full bg-[#FAF9F6] pt-4 pb-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 scroll-mt-24">
         <div className="max-w-4xl mx-auto text-center mb-4">
-          <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+          <Text variant="h3" color="dark" className="text-xl sm:text-2xl">
             Ready to book directly? Search verified stays in seconds.
-          </h3>
+          </Text>
         </div>
         <SearchWidget />
       </section>
@@ -79,12 +80,12 @@ export default function HomePage() {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-2">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              <Text variant="h2" color="dark" className="text-3xl sm:text-4xl lg:text-5xl">
                 Explore by <span className="text-sky-600 italic">Iconic Destination</span>
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 max-w-2xl font-normal">
+              </Text>
+              <Text variant="body" color="muted" className="max-w-2xl">
                 From volcanic cloud forests to urban fine dining and sapphire lake shores.
-              </p>
+              </Text>
             </div>
 
             <Link
@@ -119,12 +120,12 @@ export default function HomePage() {
                 </div>
 
                 <div className="absolute bottom-6 left-6 right-6 space-y-1.5">
-                  <h3 className="text-2xl font-extrabold text-white group-hover:text-sky-300 transition-colors">
+                  <Text variant="h3" color="white" className="text-2xl group-hover:text-sky-300 transition-colors">
                     {reg.name}
-                  </h3>
-                  <p className="text-xs font-medium text-slate-200">
+                  </Text>
+                  <Text variant="caption" className="text-slate-200 font-medium block">
                     {reg.tagline}
-                  </p>
+                  </Text>
                 </div>
               </Link>
             ))}
@@ -148,13 +149,13 @@ export default function HomePage() {
               <span>Hospitality Certification</span>
             </div>
 
-            <h3 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
+            <Text variant="h2" color="dark" className="text-3xl sm:text-4xl leading-tight">
               Get Certified with the <br />
               <span className="text-sky-600 italic">Higa Lux Quality Mark</span>
-            </h3>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+            </Text>
+            <Text variant="body" color="muted" className="leading-relaxed">
               Join Rwanda&apos;s most prestigious network of 5-star hospitality providers. Receive professional 40-point audits, staff masterclasses at the Hospitality Academy, and direct verified booking escrow.
-            </p>
+            </Text>
             <div className="pt-2 flex flex-wrap gap-5 text-xs font-semibold">
               <div className="flex items-center gap-2 text-slate-700">
                 <ShieldCheck className="w-4 h-4 text-sky-600" />

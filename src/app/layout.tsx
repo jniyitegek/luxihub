@@ -1,7 +1,15 @@
 import type { Metadata } from 'next';
+import { Poppins } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import ClientLayoutWrapper from './ClientLayoutWrapper';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Higa Lux Rwanda | Verified Luxury Hospitality, Lodges & Safari Booking',
@@ -32,8 +40,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light">
-      <body className="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+    <html lang="en" className={`light ${poppins.variable}`}>
+      <body className={`${poppins.className} bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col selection:bg-sky-500 selection:text-white`}>
         <AuthProvider>
           <ClientLayoutWrapper>
             {children}

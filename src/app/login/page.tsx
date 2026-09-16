@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { publicConfig } from '@/lib/publicConfig';
 import { Button } from '@/components/ui/Button';
+import { Text } from '@/components/ui/Text';
 import {
   ChevronLeft,
   User,
@@ -79,14 +80,14 @@ export default function LoginPage() {
       const result =
         mode === 'signup'
           ? await register({
-              name,
-              businessName: selectedRole === 'SERVICE_OWNER' ? businessName : undefined,
-              email,
-              password,
-              role: selectedRole,
-              phone: phone || undefined,
-              acceptedTerms: agreed,
-            })
+            name,
+            businessName: selectedRole === 'SERVICE_OWNER' ? businessName : undefined,
+            email,
+            password,
+            role: selectedRole,
+            phone: phone || undefined,
+            acceptedTerms: agreed,
+          })
           : await login(email, password);
 
       if (!result.ok) {
@@ -117,7 +118,7 @@ export default function LoginPage() {
     return (
       <div className="mt-1.5 px-3.5 py-1.5 rounded-xl bg-rose-950/70 border border-rose-300/40 flex items-center gap-2 text-xs font-bold text-rose-100 shadow-md">
         <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
-        <span>{fieldErrors[key]}</span>
+        <Text variant="caption" as="span">{fieldErrors[key]}</Text>
       </div>
     );
   };
@@ -137,7 +138,7 @@ export default function LoginPage() {
 
         <div className="max-w-md my-auto space-y-6">
           <Image
-            src="/logo/higa_logo_horizontal_blue.png"
+            src="/logo/higalux_logo_final.png"
             alt="Higa Lux"
             width={540}
             height={180}
@@ -145,18 +146,18 @@ export default function LoginPage() {
             priority
           />
 
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Welcome to <span className="font-serif italic text-sky-700">Higa Lux</span>
-          </h1>
+          <Text variant="h2" color="dark" className="text-4xl leading-tight">
+            Welcome Back!
+          </Text>
 
-          <p className="text-base font-bold text-slate-600 leading-relaxed">
-            Verified luxury stays across the Land of a Thousand Hills
-          </p>
+          <Text variant="body" color="muted" className="text-base leading-relaxed">
+            Elevating Rwanda’s Hospitality, One Honest Review at a Time.
+          </Text>
         </div>
 
-        <div className="text-xs text-slate-400 font-medium">
+        <Text variant="caption" color="muted" className="text-xs text-slate-400 font-medium">
           © {new Date().getFullYear()} Higa Lux. All rights reserved.
-        </div>
+        </Text>
       </div>
 
       {/* RIGHT: Clean Form Panel */}
@@ -181,10 +182,10 @@ export default function LoginPage() {
           />
 
           <div className="space-y-1 text-white">
-            <h2 className="text-3xl font-extrabold tracking-tight">Welcome!</h2>
-            <p className="text-sm font-medium text-white/80">
+
+            <Text variant="h2" color="white" className="text-sm font-medium text-white/80">
               {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
-            </p>
+            </Text>
           </div>
 
           {/* Mode Tabs */}
@@ -194,9 +195,8 @@ export default function LoginPage() {
                 key={m}
                 type="button"
                 onClick={() => switchMode(m)}
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                  mode === m ? 'bg-white text-sky-700 shadow-sm' : 'text-white/80 hover:text-white'
-                }`}
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${mode === m ? 'bg-white text-sky-700 shadow-sm' : 'text-white/80 hover:text-white'
+                  }`}
               >
                 {m === 'login' ? 'Sign In' : 'Sign Up'}
               </button>
@@ -209,22 +209,20 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedRole('CUSTOMER')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
-                    selectedRole === 'CUSTOMER'
-                      ? 'bg-white text-sky-800 shadow-sm'
-                      : 'text-white/80 hover:text-white'
-                  }`}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${selectedRole === 'CUSTOMER'
+                    ? 'bg-white text-sky-800 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                    }`}
                 >
                   Guest / Customer
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedRole('SERVICE_OWNER')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
-                    selectedRole === 'SERVICE_OWNER'
-                      ? 'bg-white text-sky-800 shadow-sm'
-                      : 'text-white/80 hover:text-white'
-                  }`}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${selectedRole === 'SERVICE_OWNER'
+                    ? 'bg-white text-sky-800 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                    }`}
                 >
                   Service Owner
                 </button>
@@ -239,8 +237,8 @@ export default function LoginPage() {
             >
               <AlertCircle className="w-5 h-5 shrink-0 text-rose-300 mt-0.5" />
               <div className="space-y-0.5">
-                <p className="font-extrabold text-rose-100">Validation Error</p>
-                <p className="text-white/90 leading-relaxed">{error}</p>
+                <Text variant="caption" className="font-extrabold text-rose-100">Validation Error</Text>
+                <Text variant="caption" className="text-white/90 leading-relaxed">{error}</Text>
               </div>
             </div>
           )}
@@ -312,9 +310,9 @@ export default function LoginPage() {
                   />
                 </div>
                 {fieldError('phone')}
-                <p className="mt-1 ml-3 text-[11px] text-white/70">
+                <Text variant="caption" className="mt-1 ml-3 text-[11px] text-white/70">
                   Rwandan mobile format: +250 78X XXX XXX or 078X XXX XXX (Leave blank if non-Rwandan).
-                </p>
+                </Text>
               </div>
             )}
 
@@ -343,12 +341,12 @@ export default function LoginPage() {
 
               {mode === 'signup' && (
                 <div className="mt-2.5 p-3.5 rounded-2xl bg-slate-900/40 border border-white/20 backdrop-blur-sm space-y-2 text-xs text-white">
-                  <div className="flex items-center justify-between font-bold text-white/90 text-[11px] pb-1 border-b border-white/10">
+                  <Text variant="caption" as="div" className="flex items-center justify-between font-bold text-white/90 text-[11px] pb-1 border-b border-white/10">
                     <span>Password Requirements:</span>
                     <span className={isMinLength ? 'text-emerald-300 font-extrabold' : 'text-amber-300 font-bold'}>
                       {password.length} / 10 characters
                     </span>
-                  </div>
+                  </Text>
 
                   <div className="flex items-center gap-2">
                     {isMinLength ? (
@@ -356,9 +354,9 @@ export default function LoginPage() {
                     ) : (
                       <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
                     )}
-                    <span className={isMinLength ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                    <Text variant="caption" as="span" className={isMinLength ? 'text-emerald-200 font-bold' : 'text-white/80'}>
                       At least 10 characters long {password.length > 0 && !isMinLength ? `(add ${10 - password.length} more)` : ''}
-                    </span>
+                    </Text>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -367,9 +365,9 @@ export default function LoginPage() {
                     ) : (
                       <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
                     )}
-                    <span className={hasLetter ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                    <Text variant="caption" as="span" className={hasLetter ? 'text-emerald-200 font-bold' : 'text-white/80'}>
                       At least 1 letter (a-z, A-Z)
-                    </span>
+                    </Text>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -378,9 +376,9 @@ export default function LoginPage() {
                     ) : (
                       <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
                     )}
-                    <span className={hasNumber ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                    <Text variant="caption" as="span" className={hasNumber ? 'text-emerald-200 font-bold' : 'text-white/80'}>
                       At least 1 number (0-9)
-                    </span>
+                    </Text>
                   </div>
                 </div>
               )}
@@ -395,7 +393,7 @@ export default function LoginPage() {
                     onChange={(e) => setAgreed(e.target.checked)}
                     className="mt-0.5 w-4 h-4 rounded border-white/40 text-sky-600 focus:ring-white shrink-0"
                   />
-                  <span>
+                  <Text variant="caption" as="span" className="text-white/85">
                     I agree to the{' '}
                     <Link href="/terms" className="font-bold underline underline-offset-2 text-white">
                       Terms of Use
@@ -405,7 +403,7 @@ export default function LoginPage() {
                       Privacy Policy
                     </Link>
                     .
-                  </span>
+                  </Text>
                 </label>
                 {fieldError('acceptedTerms')}
               </div>
@@ -425,7 +423,7 @@ export default function LoginPage() {
           </form>
 
           {publicConfig.demoMode && mode === 'login' && (
-            <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-white/80">
+            <Text variant="caption" as="div" className="flex items-center justify-center gap-2 text-[11px] font-bold text-white/80">
               <span>Demo quick fill:</span>
               {DEMO_QUICK_FILL.map((account) => (
                 <button
@@ -440,10 +438,10 @@ export default function LoginPage() {
                   {account.label}
                 </button>
               ))}
-            </div>
+            </Text>
           )}
 
-          <div className="text-center text-xs font-medium text-white/70">
+          <Text variant="caption" as="div" className="text-center text-xs font-medium text-white/70">
             {mode === 'login' ? (
               <>
                 Don&apos;t have an account?{' '}
@@ -459,11 +457,11 @@ export default function LoginPage() {
                 </button>
               </>
             )}
-          </div>
+          </Text>
 
-          <p className="text-center text-[11px] text-white/60">
+          <Text variant="caption" className="text-center text-[11px] text-white/60">
             Partner and administrator accounts are provisioned by the Higa Lux team.
-          </p>
+          </Text>
 
         </div>
       </div>

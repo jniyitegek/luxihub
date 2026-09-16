@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Building2, UtensilsCrossed, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Text } from '@/components/ui/Text';
 
 const fieldStyles =
-  'w-full h-[42px] bg-slate-50 border border-slate-200/80 rounded-lg px-3.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20 transition-all';
+  'w-full h-[42px] bg-slate-50 border border-slate-200/80 rounded-lg px-3.5 text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20 transition-all';
 
 export function SearchWidget() {
   const router = useRouter();
@@ -106,7 +107,7 @@ export function SearchWidget() {
             verifiedOnly ? 'bg-sky-50 border-sky-300' : 'bg-slate-50 border-slate-200/80'
           }`}
         >
-          <span className="text-xs sm:text-sm font-semibold text-slate-700">Verified Partners Only</span>
+          <Text variant="caption" className="text-xs sm:text-sm font-medium text-slate-700">Verified Partners Only</Text>
           <span
             className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
               verifiedOnly ? 'bg-sky-600' : 'bg-slate-300'

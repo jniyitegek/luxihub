@@ -19,7 +19,8 @@ import {
   Compass,
   UtensilsCrossed,
   Check,
-  Info
+  Info,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { BusinessListing, BookingDto, ServiceOfferingDto } from '@/lib/types';
@@ -63,6 +64,36 @@ export default function PartnerDashboardPage() {
   // Add Listing Modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingOffering, setAddingOffering] = useState(false);
+
+  // Review reply state
+  const [replyingReviewId, setReplyingReviewId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
+
+  const handleReplySubmit = async (reviewId: string) => {
+    if (!replyText.trim()) return;
+    setSubmittingReply(true);
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, partnerReply: replyText }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setReplyText('');
+        setReplyingReviewId(null);
+        await fetchPartnerData();
+      } else {
+        alert(data.error || 'Failed to submit response');
+      }
+    } catch (e) {
+      console.error('Reply submit error:', e);
+      alert('Failed to submit response.');
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
 
   // Form Fields
   const [category, setCategory] = useState<ListingCategory>('STAYS');
@@ -691,6 +722,143 @@ export default function PartnerDashboardPage() {
 
         </div>
 
+      </div>
+
+      {/* Guest Reviews & Feedback Response Management */}
+      <div id="reviews" className="space-y-6 scroll-mt-20 pt-8 border-t border-slate-200">
+        <div className="flex items-center justify-between">
+          <Text as="h2" variant="h2" color="dark" className="text-xl sm:text-2xl flex items-center gap-2 font-bold">
+            <MessageSquare className="w-5 h-5 text-sky-600" />
+            <span>Guest Reviews & Feedback Management</span>
+          </Text>
+          <span className="text-xs text-slate-500 font-bold">
+            {business?.reviews?.length || 0} Total Reviews
+          </span>
+        </div>
+
+        {!business?.reviews || business.reviews.length === 0 ? (
+          <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center text-xs text-slate-500 font-medium shadow-sm">
+            No guest reviews submitted yet for {business?.name}. Ratings and reviews submitted by verified travelers will surface here.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {business.reviews.map((rev: any) => {
+              const authorName = rev.reviewerName || rev.customer?.name || rev.user?.name || 'Verified Traveler';
+              const isReplying = replyingReviewId === rev.id;
+
+              return (
+                <Card key={rev.id} variant="compact" title="" className="!rounded-3xl border-slate-200 shadow-md p-6 space-y-4 hover:shadow-xl transition-all">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-900 flex items-center justify-center font-bold text-xs shrink-0">
+                        {authorName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">{authorName}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent rating'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(rev.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {rev.title && <div className="text-xs font-bold text-slate-900">{rev.title}</div>}
+                  {rev.comment ? (
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                      &ldquo;{rev.comment}&rdquo;
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic font-normal">
+                      Rating score submitted without comment.
+                    </p>
+                  )}
+
+                  {/* Manager Response Display */}
+                  {rev.partnerReply ? (
+                    <div className="p-3.5 rounded-2xl bg-sky-50/80 border-l-4 border-sky-600 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-900">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />
+                          <span>Your Manager Response:</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyingReviewId(rev.id);
+                            setReplyText(rev.partnerReply);
+                          }}
+                          className="text-[10px] font-bold text-sky-700 hover:underline"
+                        >
+                          Edit Response
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-700 font-normal leading-relaxed">
+                        {rev.partnerReply}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {!isReplying ? (
+                        <Button
+                          onClick={() => {
+                            setReplyingReviewId(rev.id);
+                            setReplyText('');
+                          }}
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<MessageSquare className="w-3.5 h-3.5 text-sky-600" />}
+                          className="!rounded-xl !text-xs font-bold"
+                        >
+                          Respond to Guest
+                        </Button>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* Reply Form Input */}
+                  {isReplying && (
+                    <div className="space-y-3 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
+                      <label className="block text-[11px] font-bold text-slate-700">
+                        Write Manager Response as {business?.name}:
+                      </label>
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Thank the guest for their stay, highlight improvements made, or address feedback..."
+                        className="w-full p-3 rounded-2xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 min-h-[80px]"
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          onClick={() => setReplyingReviewId(null)}
+                          variant="ghost"
+                          size="sm"
+                          className="!rounded-xl !text-xs"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => handleReplySubmit(rev.id)}
+                          variant="primary"
+                          size="sm"
+                          isLoading={submittingReply}
+                          className="!rounded-xl !text-xs font-bold"
+                        >
+                          Post Response
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Business Logo Upload Modal */}

@@ -30,10 +30,51 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       if (!canView) throw notFound('Business not found');
     }
 
+    const ratings = await prisma.serviceRating.findMany({
+      where: { serviceId: business.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const combinedReviews = [
+      ...business.reviews.map((r) => ({
+        id: r.id,
+        reviewerName: r.customer?.name || 'Verified Traveler',
+        reviewerAvatar: r.customer?.avatarUrl || null,
+        rating: r.rating,
+        cleanlinessRating: r.cleanlinessRating,
+        serviceRating: r.serviceRating,
+        hospitalityRating: r.hospitalityRating,
+        valueRating: r.valueRating,
+        title: r.title,
+        comment: r.comment,
+        partnerReply: r.partnerReply,
+        partnerRepliedAt: r.partnerRepliedAt?.toISOString() ?? null,
+        isVerified: r.isVerified,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      ...ratings.map((sr) => ({
+        id: sr.id,
+        reviewerName: sr.reviewerName || 'Anonymous Traveler',
+        reviewerAvatar: null,
+        rating: sr.rating,
+        cleanlinessRating: sr.rating,
+        serviceRating: sr.rating,
+        hospitalityRating: sr.rating,
+        valueRating: sr.rating,
+        title: `${sr.rating}-Star Verified Rating`,
+        comment: sr.comment || '',
+        partnerReply: null,
+        partnerRepliedAt: null,
+        isVerified: !(sr as any).isUnregistered,
+        createdAt: sr.createdAt.toISOString(),
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     return NextResponse.json({
       success: true,
       business: {
         ...business,
+        reviews: combinedReviews,
         amenities: JSON.parse(business.amenities || '[]'),
         images: JSON.parse(business.images || '[]'),
         qualityScore: business.audits[0]?.score ?? null,

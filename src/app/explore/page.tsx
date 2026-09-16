@@ -6,20 +6,15 @@ import Image from 'next/image';
 import {
   Search,
   Star,
-  Building2,
-  UtensilsCrossed,
-  Compass,
   ShieldCheck,
   RotateCcw
 } from 'lucide-react';
 import { BusinessListing } from '@/lib/types';
 import { CertificationBadge } from '@/components/ui/CertificationBadge';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
-import { LiveLeaderboard } from '@/components/landing/LiveLeaderboard';
 import { formatRwf, formatUsd } from '@/lib/utils';
 import { RateServiceButton } from '@/components/reviews/RateServiceButton';
 
@@ -79,158 +74,70 @@ function ExploreContent() {
     return true;
   });
 
+  const categoryLabel = type !== 'ALL' ? (type === 'HOTEL' ? 'Stays' : type === 'RESTAURANT' ? 'Dining' : 'Experiences') : null;
+  const locationLabel = location !== 'ALL' ? location : null;
+  const queryLabel = query ? `"${query}"` : null;
+
+  const activeFilters = [categoryLabel, locationLabel, queryLabel].filter(Boolean);
+  const activeFiltersText = activeFilters.join(' • ');
+
+  const titleHeading = activeFiltersText
+    ? `Search found (${activeFiltersText})`
+    : 'All Verified Services';
+
   return (
-    <div className="w-full space-y-10 pb-20 bg-[#FAF9F6] text-slate-900 min-h-screen">
-      
-      {/* Light Neutral Header Canvas */}
-      <div className="w-full bg-[#FAF9F6] text-slate-900 py-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto space-y-3">
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-            Explore Rwandan <span className="text-sky-600 italic">Luxury Hospitality</span>
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 max-w-2xl font-normal leading-relaxed">
-            Browse 100% verified hotels, fine dining establishments, and guided safari expeditions. Every listing has passed our 40-point inspection protocol.
-          </p>
-        </div>
-      </div>
+    <div className="w-full pb-20 bg-[#FAF9F6] text-slate-900 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
 
-      {/* Live Leaderboard: who guests are highlighting right now, by category */}
-      <LiveLeaderboard variant="section" />
+        {/* Dynamic Search Title & Filter Status */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div className="space-y-1">
+            <Text variant="h1" color="dark" className="text-2xl sm:text-3xl font-medium">
+              {titleHeading}
+            </Text>
+            <Text variant="caption" color="muted" className="text-xs sm:text-sm block">
+              Showing <strong className="text-slate-900 font-semibold">{filteredBusinesses.length}</strong> verified {filteredBusinesses.length === 1 ? 'service' : 'services'}
+              {activeFiltersText ? ' matching your active filters' : ' across Rwanda'}
+            </Text>
+          </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-
-        <div className="pt-2">
-          <Text as="h2" variant="h2" color="dark" className="text-2xl sm:text-3xl">
-            Browse All Verified Listings
-          </Text>
-          <Text variant="caption" color="muted" className="mt-1">
-            Filter and compare every certified property, restaurant, and tour on the platform.
-          </Text>
-        </div>
-
-        {/* Filter Control Bar */}
-        <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-5">
-          
-          {/* Category Tabs */}
-          <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <Button
-                onClick={() => setType('ALL')}
-                variant={type === 'ALL' ? 'primary' : 'ghost'}
-                size="sm"
-                className={`!rounded-xl !text-xs ${type === 'ALL' ? '' : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-none shadow-none'}`}
-              >
-                All Categories
-              </Button>
-
-              <Button
-                onClick={() => setType('HOTEL')}
-                variant={type === 'HOTEL' ? 'primary' : 'ghost'}
-                size="sm"
-                leftIcon={<Building2 className="w-3.5 h-3.5" />}
-                className={`!rounded-xl !text-xs ${type === 'HOTEL' ? '' : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-none shadow-none'}`}
-              >
-                Lodges & Hotels
-              </Button>
-
-              <Button
-                onClick={() => setType('RESTAURANT')}
-                variant={type === 'RESTAURANT' ? 'primary' : 'ghost'}
-                size="sm"
-                leftIcon={<UtensilsCrossed className="w-3.5 h-3.5" />}
-                className={`!rounded-xl !text-xs ${type === 'RESTAURANT' ? '' : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-none shadow-none'}`}
-              >
-                Fine Dining
-              </Button>
-
-              <Button
-                onClick={() => setType('TOUR')}
-                variant={type === 'TOUR' ? 'primary' : 'ghost'}
-                size="sm"
-                leftIcon={<Compass className="w-3.5 h-3.5" />}
-                className={`!rounded-xl !text-xs ${type === 'TOUR' ? '' : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-none shadow-none'}`}
-              >
-                Gorilla & Safari Tours
-              </Button>
-            </div>
-
+          {activeFilters.length > 0 && (
             <Button
               onClick={resetFilters}
               variant="ghost"
               size="sm"
               leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-              className="bg-transparent border-none shadow-none text-slate-500 hover:text-slate-900 !px-0 !py-0"
+              className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-full px-4 py-1.5 self-start sm:self-auto text-xs font-medium shrink-0 shadow-sm"
             >
               Reset Filters
             </Button>
-          </div>
-
-          {/* Dropdown Filters Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            
-            {/* Keyword Search */}
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search keyword..."
-              leftIcon={<Search className="w-4 h-4" />}
-            />
-
-            {/* Region */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-sky-500/20 transition-all">
-              <select
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="bg-transparent text-slate-900 text-xs font-semibold focus:outline-none w-full cursor-pointer"
-              >
-                <option value="ALL" className="bg-white text-slate-900">All Rwandan Regions</option>
-                <option value="Kigali" className="bg-white text-slate-900">Kigali City (Urban Luxury)</option>
-                <option value="Musanze" className="bg-white text-slate-900">Musanze (Volcanoes NP)</option>
-                <option value="Rubavu" className="bg-white text-slate-900">Rubavu / Lake Kivu</option>
-                <option value="Nyungwe" className="bg-white text-slate-900">Nyungwe Rainforest</option>
-                <option value="Akagera" className="bg-white text-slate-900">Akagera National Park</option>
-              </select>
-            </div>
-
-            {/* QA Badge */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-sky-500/20 transition-all">
-              <select
-                value={badge}
-                onChange={(e) => setBadge(e.target.value)}
-                className="bg-transparent text-slate-900 text-xs font-semibold focus:outline-none w-full cursor-pointer"
-              >
-                <option value="ALL" className="bg-white text-slate-900">All QA Badges</option>
-                <option value="GOLD_STANDARD" className="bg-white text-sky-700 font-bold">Gold Standard Only (95%+)</option>
-                <option value="LUXE_VERIFIED" className="bg-white text-sky-700 font-bold">Luxe Verified Only</option>
-                <option value="ECO_SUSTAINABLE" className="bg-white text-sky-700 font-bold">Eco-Sustainable Heritage</option>
-              </select>
-            </div>
-
-            {/* Price Tier */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-sky-500/20 transition-all">
-              <select
-                value={priceTier}
-                onChange={(e) => setPriceTier(e.target.value)}
-                className="bg-transparent text-slate-900 text-xs font-semibold focus:outline-none w-full cursor-pointer"
-              >
-                <option value="ALL" className="bg-white text-slate-900">Any Price Range</option>
-                <option value="BUDGET" className="bg-white text-slate-900">Under 500,000 RWF</option>
-                <option value="MID" className="bg-white text-slate-900">500,000 - 1,200,000 RWF</option>
-                <option value="LUXURY" className="bg-white text-slate-900">Ultra-Luxury (&gt; 1.2M RWF)</option>
-              </select>
-            </div>
-
-          </div>
-
+          )}
         </div>
 
-        {/* Results Header */}
-        <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-          <span>
-            Showing <strong className="text-slate-900">{filteredBusinesses.length}</strong> verified luxury experience(s)
-          </span>
-          <div className="flex items-center gap-1.5 text-sky-700 font-extrabold">
+        {/* Single Search Bar Input for Property/Service Name */}
+        <div className="relative max-w-lg">
+          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by specific service or property name..."
+            className="w-full h-11 pl-11 pr-10 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 shadow-sm transition-all"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-medium px-1.5 py-0.5 rounded-md hover:bg-slate-100"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Trust Indicator Row */}
+        <div className="flex items-center justify-end text-xs text-slate-500 font-medium pt-1">
+          <div className="flex items-center gap-1.5 text-sky-700 font-medium">
             <ShieldCheck className="w-4 h-4 text-sky-600" />
             <span>Direct Reservation Escrow Guaranteed</span>
           </div>
