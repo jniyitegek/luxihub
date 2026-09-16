@@ -84,6 +84,8 @@ export async function GET() {
         location: b.location,
         image: images[0] || PLACEHOLDER_IMAGE,
         certificationBadge: b.certificationBadge,
+        isVerified: b.isVerified,
+        verificationSource: b.verificationSource,
         ratingAvg: b.ratingAvg,
         reviewCount: b.reviewCount,
         liveScore,

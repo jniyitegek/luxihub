@@ -15,7 +15,6 @@ import {
   Mail, 
   Globe, 
   Clock, 
-  Sparkles, 
   MessageSquare,
   BedDouble,
   Utensils,

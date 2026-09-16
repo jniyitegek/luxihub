@@ -1,4 +1,5 @@
-export type UserRole = 'CUSTOMER' | 'PARTNER' | 'ADMIN';
+export type UserRole = 'CUSTOMER' | 'SERVICE_OWNER' | 'ADMIN';
+export type VerificationSource = 'PUBLIC_REVIEW' | 'BUSINESS_REGISTRATION';
 
 export interface UserSession {
   id: string;
@@ -17,7 +18,7 @@ export type CertificationBadge = 'LUXE_VERIFIED' | 'GOLD_STANDARD' | 'ECO_SUSTAI
 
 export interface BusinessListing {
   id: string;
-  ownerId: string;
+  ownerId?: string | null;
   name: string;
   slug: string;
   type: BusinessType;
@@ -35,11 +36,17 @@ export interface BusinessListing {
   ratingAvg: number;
   reviewCount: number;
   isFeatured: boolean;
+  isVerified?: boolean;
+  verificationSource?: VerificationSource | null;
+  needsAdminAudit?: boolean;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
   subscriptionTier: SubscriptionTier;
   featuredUntil?: string;
   phone?: string;
   email?: string;
   website?: string;
+  logoUrl?: string | null;
   responseRate: number;
   qualityScore?: number;
   responseTimeHours?: number;
@@ -51,15 +58,19 @@ export interface BusinessListing {
 export interface ServiceOfferingDto {
   id: string;
   businessId: string;
+  category?: string;
+  subType?: string;
   title: string;
   description: string;
   capacity: number;
   price: number;
   currency: string;
-  unit: 'per_night' | 'per_person' | 'per_table' | 'per_tour';
+  unit: string;
   duration?: string;
+  coverImage?: string;
   images: string[];
   inclusions: string[];
+  attributes?: Record<string, any>;
   isAvailable: boolean;
 }
 
@@ -180,6 +191,8 @@ export interface LeaderboardEntryDto {
   location: RwandanRegion;
   image: string;
   certificationBadge: CertificationBadge;
+  isVerified?: boolean;
+  verificationSource?: VerificationSource | null;
   ratingAvg: number;
   reviewCount: number;
   liveScore: number;
@@ -245,6 +258,8 @@ export interface ServiceRatingDto {
   id: string;
   serviceId: string;
   serviceName: string;
+  serviceType: string;
+  isUnregistered: boolean;
   rating: number;
   comment?: string | null;
   reviewerName: string;
@@ -252,8 +267,10 @@ export interface ServiceRatingDto {
 }
 
 export interface CreateServiceRatingInput {
-  serviceId: string;
+  serviceId?: string;
   serviceName: string;
+  serviceType: string;
+  isUnregistered?: boolean;
   rating: number;
   comment?: string;
   reviewerName?: string;

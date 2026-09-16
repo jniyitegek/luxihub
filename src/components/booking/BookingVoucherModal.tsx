@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import QRCode from 'qrcode';
-import { X, Printer, Download, Sparkles, ShieldCheck, MapPin, Calendar, Users, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { X, Printer, Download, ShieldCheck, MapPin, Calendar, Users, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import { BookingDto } from '@/lib/types';
 import { formatRwf, formatPrice } from '@/lib/utils';
 import { CertificationBadge } from '../ui/CertificationBadge';
@@ -57,7 +57,7 @@ export function BookingVoucherModal({ booking, isOpen, onClose }: VoucherModalPr
         {/* Modal Top Bar (Hidden on print) */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 print:hidden">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-sky-600" />
+            <ShieldCheck className="w-4 h-4 text-sky-600" />
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Official Booking Confirmation Voucher</span>
           </div>
 

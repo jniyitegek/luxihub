@@ -16,7 +16,7 @@ import { DEMO_EMAILS, demoAccountForRole } from '@/lib/demoAccounts';
  */
 
 const switchSchema = z.object({
-  role: z.enum(['CUSTOMER', 'PARTNER', 'ADMIN']),
+  role: z.enum(['CUSTOMER', 'SERVICE_OWNER', 'PARTNER', 'ADMIN']),
 });
 
 export async function POST(req: Request) {
@@ -31,7 +31,8 @@ export async function POST(req: Request) {
     }
 
     const { role } = await parseBody(req, switchSchema);
-    const target = demoAccountForRole(role);
+    const targetRole = role === 'PARTNER' ? 'SERVICE_OWNER' : role;
+    const target = demoAccountForRole(targetRole);
 
     const user = await prisma.user.findUnique({ where: { email: target.email } });
     if (!user) {

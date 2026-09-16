@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!booking) throw notFound('Booking not found');
 
     if (user.role === 'CUSTOMER' && booking.customerId !== user.id) throw forbidden();
-    if (user.role === 'PARTNER' && booking.business.ownerId !== user.id) throw forbidden();
+    if ((user.role === 'SERVICE_OWNER' || (user.role as any) === 'PARTNER') && booking.business.ownerId !== user.id) throw forbidden();
 
     return NextResponse.json({
       success: true,
@@ -69,7 +69,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!booking) throw notFound('Booking not found');
 
     const isGuest = booking.customerId === user.id;
-    const isHost = user.role === 'PARTNER' && booking.business.ownerId === user.id;
+    const isHost = (user.role === 'SERVICE_OWNER' || (user.role as any) === 'PARTNER') && booking.business.ownerId === user.id;
     const isAdmin = user.role === 'ADMIN';
 
     if (!isGuest && !isHost && !isAdmin) {

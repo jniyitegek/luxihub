@@ -14,7 +14,7 @@ export async function GET() {
     const whereClause =
       user.role === 'CUSTOMER'
         ? { customerId: user.id }
-        : user.role === 'PARTNER'
+        : user.role === 'SERVICE_OWNER' || (user.role as any) === 'PARTNER'
           ? { business: { ownerId: user.id } }
           : {}; // ADMIN sees every booking on the platform
 

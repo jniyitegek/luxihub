@@ -8,12 +8,23 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
+enum Role {
+  CUSTOMER
+  SERVICE_OWNER
+  ADMIN
+}
+
+enum VerificationSource {
+  PUBLIC_REVIEW
+  BUSINESS_REGISTRATION
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
   passwordHash String
   name         String
-  role         String    @default("CUSTOMER") // CUSTOMER, PARTNER, ADMIN
+  role         Role      @default(CUSTOMER)
   phone        String?
   avatarUrl    String?
   loyaltyPoints Int      @default(0)
@@ -29,34 +40,40 @@ model User {
 }
 
 model Business {
-  id                 String    @id @default(cuid())
-  ownerId            String
-  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id                 String              @id @default(cuid())
+  ownerId            String?
+  owner              User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   name               String
-  slug               String    @unique
-  type               String    // HOTEL, RESTAURANT, TOUR
-  location           String    // Kigali, Musanze, Rubavu, Nyungwe, Akagera
+  slug               String              @unique
+  type               String              // HOTEL, RESTAURANT, TOUR
+  location           String              // Kigali, Musanze, Rubavu, Nyungwe, Akagera
   address            String
   description        String
   shortTagline       String?
-  amenities          String    @default("[]") // JSON string array
-  images             String    @default("[]") // JSON string array
-  pricingTier        String    @default("$$$") // $$, $$$, $$$$
-  basePrice          Float     @default(150000)
-  currency           String    @default("RWF")
-  status             String    @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
-  certificationBadge String    @default("LUXE_VERIFIED") // LUXE_VERIFIED, GOLD_STANDARD, ECO_SUSTAINABLE, NONE
-  ratingAvg          Float     @default(0)
-  reviewCount        Int       @default(0)
-  isFeatured         Boolean   @default(false)
-  subscriptionTier   String    @default("STANDARD") // STANDARD, CERTIFIED, ELITE
+  amenities          String              @default("[]") // JSON string array
+  images             String              @default("[]") // JSON string array
+  pricingTier        String              @default("$$$") // $$, $$$, $$$$
+  basePrice          Float               @default(150000)
+  currency           String              @default("RWF")
+  status             String              @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
+  certificationBadge String              @default("LUXE_VERIFIED") // LUXE_VERIFIED, GOLD_STANDARD, ECO_SUSTAINABLE, NONE
+  ratingAvg          Float               @default(0)
+  reviewCount        Int                 @default(0)
+  isFeatured         Boolean             @default(false)
+  isVerified         Boolean             @default(false)
+  verificationSource VerificationSource?
+  needsAdminAudit    Boolean             @default(false)
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  subscriptionTier   String              @default("STANDARD") // STANDARD, CERTIFIED, ELITE
   featuredUntil      DateTime? // Advanced Visibility Tools: promoted placement expiry
   phone              String?
   email              String?
   website            String?
-  responseRate       Int       @default(0) // Percentage of guest enquiries answered
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  logoUrl            String?
+  responseRate       Int                 @default(0) // Percentage of guest enquiries answered
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   offerings          ServiceOffering[]
   bookings           Booking[]
@@ -69,6 +86,8 @@ model Business {
   @@index([type])
   @@index([location])
   @@index([status])
+  @@index([isVerified])
+  @@index([needsAdminAudit])
   @@index([isFeatured, ratingAvg])
 }
 
@@ -76,21 +95,26 @@ model ServiceOffering {
   id           String    @id @default(cuid())
   businessId   String
   business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category     String    @default("STAYS") // STAYS, EXPERIENCES, DINING, or custom category name
+  subType      String?   // e.g., Suite, Villa, Tour, À la carte
   title        String
   description  String
   capacity     Int       @default(2)
   price        Float
   currency     String    @default("RWF")
-  unit         String    @default("per_night") // per_night, per_person, per_table, per_tour
+  unit         String    @default("per_night") // per_night, per_person, per_table, per_tour, etc.
   duration     String?
+  coverImage   String?
   images       String    @default("[]") // JSON string array
   inclusions   String    @default("[]") // JSON string array
+  attributes   String    @default("{}") // Flexible JSON object for category-specific & custom key/value pairs
   isAvailable  Boolean   @default(true)
   createdAt    DateTime  @default(now())
 
   bookings     Booking[]
 
   @@index([businessId])
+  @@index([category])
 }
 
 model Booking {
@@ -275,16 +299,20 @@ model PartnerSubscription {
 }
 
 model ServiceRating {
-  id           String   @id @default(cuid())
-  serviceId    String   // service_id
-  serviceName  String
-  rating       Int
-  comment      String?
-  reviewerName String   @default("Anonymous") // reviewer_name
-  ipHash       String   // ip_hash
-  createdAt    DateTime @default(now()) // created_at
+  id             String   @id @default(cuid())
+  serviceId      String   // service_id
+  serviceName    String
+  serviceType    String   @default("OTHER") // STAYS, EXPERIENCES, DINING, OTHER
+  isUnregistered Boolean  @default(false)
+  rating         Int
+  comment        String?
+  reviewerName   String   @default("Anonymous") // reviewer_name
+  ipHash         String   // ip_hash
+  createdAt      DateTime @default(now()) // created_at
 
   @@index([serviceId])
+  @@index([serviceType])
+  @@index([isUnregistered])
   @@index([ipHash])
 }
 

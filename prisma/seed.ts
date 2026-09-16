@@ -34,8 +34,21 @@ async function main() {
   // staging environment so the published password is not the live one.
   const seedPassword = process.env.SEED_PASSWORD || 'password123';
   const passwordHash = await bcrypt.hash(seedPassword, 12);
+  const adminPasswordHash = await bcrypt.hash('Admin123', 12);
 
   // 2. Create Users
+  // Required Root Admin User
+  const rootAdmin = await prisma.user.create({
+    data: {
+      email: 'admin@mail.com',
+      passwordHash: adminPasswordHash,
+      name: 'System Root Admin',
+      role: 'ADMIN',
+      phone: '+250 788 000 000',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+    },
+  });
+
   const admin = await prisma.user.create({
     data: {
       email: 'admin@higalux.rw',
@@ -52,7 +65,7 @@ async function main() {
       email: 'partner@retreat.rw',
       passwordHash,
       name: 'Jean-Paul Nsengiyumva',
-      role: 'PARTNER',
+      role: 'SERVICE_OWNER',
       phone: '+250 788 654 321',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
     },
@@ -63,7 +76,7 @@ async function main() {
       email: 'partner@bisate.rw',
       passwordHash,
       name: 'Alphonse Bizimana',
-      role: 'PARTNER',
+      role: 'SERVICE_OWNER',
       phone: '+250 788 777 888',
       avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
     },
@@ -133,6 +146,8 @@ async function main() {
       website: 'https://www.the-retreat.rw',
       responseRate: 100,
       subscriptionTier: 'ELITE',
+      isVerified: true,
+      verificationSource: 'BUSINESS_REGISTRATION',
     },
   });
 
@@ -173,6 +188,8 @@ async function main() {
       email: 'concierge@bisaterwanda.com',
       website: 'https://wilderness-destinations.com/africa/rwanda/bisate-lodge',
       responseRate: 99,
+      isVerified: true,
+      verificationSource: 'BUSINESS_REGISTRATION',
     },
   });
 

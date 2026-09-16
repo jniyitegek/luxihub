@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import {
   Search,
   Star,
-  Sparkles,
   Building2,
   UtensilsCrossed,
   Compass,
@@ -80,24 +80,18 @@ function ExploreContent() {
   });
 
   return (
-    <div className="w-full space-y-10 pb-20">
+    <div className="w-full space-y-10 pb-20 bg-[#FAF9F6] text-slate-900 min-h-screen">
       
-      {/* Full-width Dark Header Canvas (Clean, no eyebrow pill) */}
-      <div className="w-full bg-gradient-to-b from-[#0B1B36] via-[#0D2240] to-[#0B1B36] text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        {/* Glowing Shapes */}
-        <div className="absolute top-0 right-10 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto space-y-3 relative z-10">
-          <Text as="h1" variant="h1" color="white" className="text-3xl sm:text-5xl">
-            Explore Rwandan <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-white">Luxury Hospitality</span>
-          </Text>
-          <Text variant="body" className="text-sm sm:text-base text-sky-100/90 max-w-2xl">
+      {/* Light Neutral Header Canvas */}
+      <div className="w-full bg-[#FAF9F6] text-slate-900 py-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto space-y-3">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+            Explore Rwandan <span className="text-sky-600 italic">Luxury Hospitality</span>
+          </h1>
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl font-normal leading-relaxed">
             Browse 100% verified hotels, fine dining establishments, and guided safari expeditions. Every listing has passed our 40-point inspection protocol.
-          </Text>
+          </p>
         </div>
-
       </div>
 
       {/* Live Leaderboard: who guests are highlighting right now, by category */}
@@ -124,7 +118,6 @@ function ExploreContent() {
                 onClick={() => setType('ALL')}
                 variant={type === 'ALL' ? 'primary' : 'ghost'}
                 size="sm"
-                leftIcon={<Sparkles className="w-3.5 h-3.5" />}
                 className={`!rounded-xl !text-xs ${type === 'ALL' ? '' : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-none shadow-none'}`}
               >
                 All Categories
@@ -274,7 +267,21 @@ function ExploreContent() {
                 subtitle={item.description}
                 price={`${formatRwf(item.basePrice)} (~${formatUsd(Math.round(item.basePrice / 1350))})`}
                 location={item.location}
-                badgeTag={<CertificationBadge badge={item.certificationBadge} size="sm" />}
+                badgeTag={
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {item.logoUrl && (
+                      <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white shadow-md bg-slate-900 shrink-0">
+                        <Image src={item.logoUrl} alt={item.name} fill className="object-cover" />
+                      </div>
+                    )}
+                    <CertificationBadge badge={item.certificationBadge} size="sm" />
+                    {(!item.isVerified || item.verificationSource === 'PUBLIC_REVIEW') && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
+                        Unverified
+                      </span>
+                    )}
+                  </div>
+                }
                 actionText="Reserve"
               >
                 <div className="space-y-2">

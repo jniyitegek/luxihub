@@ -7,7 +7,6 @@ import {
   Users, 
   CheckCircle2, 
   Clock, 
-  Sparkles, 
   PlusCircle, 
   ShieldCheck,
   Download

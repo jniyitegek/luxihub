@@ -32,8 +32,8 @@ export async function GET(req: Request) {
     // administrators see everything.
     if (user?.role === 'ADMIN') {
       // no status filter
-    } else if (user?.role === 'PARTNER') {
-      where.OR = [{ status: 'VERIFIED' }, { ownerId: user.id }];
+    } else if (user?.role === 'SERVICE_OWNER' || (user?.role as any) === 'PARTNER') {
+      where.OR = [{ status: 'VERIFIED' }, { ownerId: user?.id }];
     } else {
       where.status = 'VERIFIED';
     }
@@ -118,7 +118,7 @@ const createSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
     const input = await parseBody(req, createSchema);
 
     const business = await prisma.business.create({

@@ -18,7 +18,8 @@ const configuredHosts = (process.env.NEXT_PUBLIC_IMAGE_HOSTS || '')
   .map((h) => h.trim())
   .filter(Boolean);
 
-const demoHosts = demoMode ? ['images.unsplash.com', 'plus.unsplash.com'] : [];
+const demoHosts = ['images.unsplash.com', 'plus.unsplash.com'];
+
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },

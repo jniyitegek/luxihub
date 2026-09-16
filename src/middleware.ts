@@ -11,15 +11,15 @@ import { UserRole } from '@/lib/types';
  * navigation before any protected UI is served.
  */
 
-const ROUTE_ROLES: Array<{ prefix: string; roles: UserRole[] }> = [
+const ROUTE_ROLES: Array<{ prefix: string; roles: (UserRole | 'PARTNER')[] }> = [
   { prefix: '/admin', roles: ['ADMIN'] },
-  { prefix: '/partner', roles: ['PARTNER', 'ADMIN'] },
-  { prefix: '/customer', roles: ['CUSTOMER', 'PARTNER', 'ADMIN'] },
+  { prefix: '/partner', roles: ['SERVICE_OWNER', 'PARTNER', 'ADMIN'] },
+  { prefix: '/customer', roles: ['CUSTOMER', 'SERVICE_OWNER', 'PARTNER', 'ADMIN'] },
 ];
 
-function homeForRole(role: UserRole): string {
+function homeForRole(role: string): string {
   if (role === 'ADMIN') return '/admin/dashboard';
-  if (role === 'PARTNER') return '/partner/dashboard';
+  if (role === 'SERVICE_OWNER' || role === 'PARTNER') return '/partner/dashboard';
   return '/customer/bookings';
 }
 

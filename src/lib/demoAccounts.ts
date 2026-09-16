@@ -9,7 +9,7 @@ import { UserRole } from './types';
  */
 export const DEMO_ACCOUNTS: Record<'customer' | 'partner' | 'admin', { email: string; role: UserRole; label: string }> = {
   customer: { email: 'customer@higalux.rw', role: 'CUSTOMER', label: 'Guest' },
-  partner: { email: 'partner@retreat.rw', role: 'PARTNER', label: 'Partner' },
+  partner: { email: 'partner@retreat.rw', role: 'SERVICE_OWNER', label: 'Service Owner' },
   admin: { email: 'admin@higalux.rw', role: 'ADMIN', label: 'Admin' },
 };
 
@@ -17,6 +17,6 @@ export const DEMO_EMAILS: ReadonlySet<string> = new Set(Object.values(DEMO_ACCOU
 
 export function demoAccountForRole(role: UserRole) {
   if (role === 'ADMIN') return DEMO_ACCOUNTS.admin;
-  if (role === 'PARTNER') return DEMO_ACCOUNTS.partner;
+  if (role === 'SERVICE_OWNER' || (role as any) === 'PARTNER') return DEMO_ACCOUNTS.partner;
   return DEMO_ACCOUNTS.customer;
 }

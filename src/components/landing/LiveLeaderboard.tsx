@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Building2, UtensilsCrossed, Compass, Sparkles, Crown, TrendingUp, Minus, Quote, ShieldCheck } from 'lucide-react';
+import { Building2, UtensilsCrossed, Compass, Crown, TrendingUp, Minus, Quote, ShieldCheck } from 'lucide-react';
 import { Text } from '@/components/ui/Text';
 import { LeaderboardBoardsDto, LeaderboardEntryDto } from '@/lib/types';
 
@@ -13,7 +13,7 @@ const POLL_INTERVAL_MS = 45000;
 type FilterKey = 'ALL' | 'HOTEL' | 'RESTAURANT' | 'TOUR';
 
 const FILTERS: { key: FilterKey; label: string; icon: React.ElementType }[] = [
-  { key: 'ALL', label: 'All Categories', icon: Sparkles },
+  { key: 'ALL', label: 'All Categories', icon: Crown },
   { key: 'HOTEL', label: 'Lodges & Hotels', icon: Building2 },
   { key: 'RESTAURANT', label: 'Fine Dining', icon: UtensilsCrossed },
   { key: 'TOUR', label: 'Safari & Tours', icon: Compass },
@@ -21,8 +21,8 @@ const FILTERS: { key: FilterKey; label: string; icon: React.ElementType }[] = [
 
 const PODIUM_RING = ['ring-amber-400', 'ring-slate-300', 'ring-amber-700/70'];
 const PODIUM_SIZE = ['w-28 h-28 sm:w-32 sm:h-32', 'w-20 h-20 sm:w-24 sm:h-24', 'w-20 h-20 sm:w-24 sm:h-24'];
-const PODIUM_LIFT = ['-translate-y-4 sm:-translate-y-6', 'translate-y-0', 'translate-y-0'];
-const PODIUM_BADGE = ['bg-amber-400 text-slate-950', 'bg-slate-300 text-slate-900', 'bg-amber-700/80 text-white'];
+const PODIUM_LIFT = ['-translate-y-3 sm:-translate-y-5', 'translate-y-0', 'translate-y-0'];
+const PODIUM_BADGE = ['bg-amber-400 text-slate-950 font-black', 'bg-slate-300 text-slate-900 font-bold', 'bg-amber-700/80 text-white font-bold'];
 
 interface LiveLeaderboardProps {
   variant?: 'hero' | 'section';
@@ -64,35 +64,27 @@ export function LiveLeaderboard({ variant = 'section' }: LiveLeaderboardProps) {
   const podiumRanks = podium.length === 3 ? [2, 1, 3] : podium.map((_, i) => i + 1);
 
   return (
-    <section
-      className={
-        isHero
-          ? 'relative w-full bg-gradient-to-b from-sky-600 via-sky-700 to-sky-800 text-white pt-28 lg:pt-36 pb-20 overflow-hidden'
-          : 'w-full bg-slate-50 py-16 px-4 sm:px-6 lg:px-8'
-      }
-    >
-      {isHero && (
-        <>
-          <div className="absolute top-0 left-1/4 w-[800px] h-[400px] bg-white/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-          <div className="absolute bottom-0 right-10 w-[600px] h-[350px] bg-sky-300/15 rounded-full blur-[120px] pointer-events-none -z-10" />
-        </>
-      )}
-
-      <div className={isHero ? 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : 'max-w-4xl mx-auto'}>
+    <section className="w-full bg-[#FAF9F6] text-slate-900 py-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
         {/* Header */}
-        <div className="text-center space-y-3 mb-8">
-          <Text as="h1" variant="h1" color={isHero ? 'white' : 'dark'} className={isHero ? '' : 'text-3xl sm:text-4xl'}>
-            Service Provider Leaderboard
-          </Text>
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold uppercase tracking-wider">
 
-          <Text variant="body" color={isHero ? 'white' : 'muted'} className={`max-w-2xl mx-auto ${isHero ? 'text-white/80 text-base' : 'text-base'}`}>
-            Ranked purely by verified guest reviews &mdash; rating, review volume, and how recently guests have been raving. No
-            business can buy its way onto this board; every place moves up only when real travelers say so.
-          </Text>
+            
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+            Rwanda Luxury Service Leaderboard
+          </h1>
+
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
+            Ranked purely by verified guest reviews — rating, review volume, and recent sentiment. No business can buy its way onto this board.
+          </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center justify-center gap-2 flex-wrap mb-10">
+        <div className="flex items-center justify-center gap-2 flex-wrap">
           {FILTERS.map((f) => {
             const Icon = f.icon;
             const active = filter === f.key;
@@ -103,10 +95,8 @@ export function LiveLeaderboard({ variant = 'section' }: LiveLeaderboardProps) {
                 onClick={() => setFilter(f.key)}
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${
                   active
-                    ? 'bg-white text-sky-700 shadow-md'
-                    : isHero
-                      ? 'bg-white/10 text-white/70 hover:bg-white/20 border border-white/15'
-                      : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200'
+                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -118,30 +108,26 @@ export function LiveLeaderboard({ variant = 'section' }: LiveLeaderboardProps) {
 
         {loading ? (
           <div className="py-16 text-center">
-            <div
-              className={`inline-block w-8 h-8 border-2 border-t-transparent rounded-full animate-spin ${
-                isHero ? 'border-white' : 'border-sky-600'
-              }`}
-            />
+            <div className="inline-block w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : entries.length === 0 ? (
-          <div className={`text-center py-12 text-sm font-medium ${isHero ? 'text-white/60' : 'text-slate-400'}`}>
+          <div className="text-center py-12 text-sm font-medium text-slate-500 bg-white rounded-2xl border border-slate-200">
             No verified reviews yet in this category.
           </div>
         ) : (
           <>
             {/* Podium: top 3 */}
-            <div className="flex items-end justify-center gap-4 sm:gap-8 mb-12">
+            <div className="flex items-end justify-center gap-4 sm:gap-8 pt-4 pb-4">
               {podiumOrdered.map((entry, i) => (
-                <PodiumCard key={entry.id} entry={entry} rank={podiumRanks[i]} isHero={isHero} />
+                <PodiumCard key={entry.id} entry={entry} rank={podiumRanks[i]} />
               ))}
             </div>
 
             {/* Ranked list: #4 onward */}
             {rest.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 {rest.map((entry, idx) => (
-                  <ListRow key={entry.id} entry={entry} rank={idx + 4} isHero={isHero} />
+                  <ListRow key={entry.id} entry={entry} rank={idx + 4} />
                 ))}
               </div>
             )}
@@ -149,16 +135,17 @@ export function LiveLeaderboard({ variant = 'section' }: LiveLeaderboardProps) {
         )}
 
         {data && (
-          <Text variant="caption" color={isHero ? 'white' : 'muted'} className={`mt-8 block text-center ${isHero ? 'text-white/50' : ''}`}>
-            Board last refreshed {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
-          </Text>
+          <p className="text-xs text-slate-400 text-center block pt-2">
+            Board refreshed {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
+          </p>
         )}
+
       </div>
     </section>
   );
 }
 
-function PodiumCard({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank: number; isHero: boolean }) {
+function PodiumCard({ entry, rank }: { entry: LeaderboardEntryDto; rank: number }) {
   const idx = rank - 1;
   return (
     <Link
@@ -166,26 +153,26 @@ function PodiumCard({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank:
       className={`flex flex-col items-center gap-2 group transition-transform hover:-translate-y-1 ${PODIUM_LIFT[idx]}`}
     >
       <div className="flex flex-col items-center gap-1">
-        {rank === 1 && <Crown className="w-6 h-6 text-amber-400 fill-amber-400" />}
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold ${PODIUM_BADGE[idx]}`}>
+        {rank === 1 && <Crown className="w-6 h-6 text-amber-500 fill-amber-400" />}
+        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${PODIUM_BADGE[idx]}`}>
           {rank}
         </span>
       </div>
 
-      <div className={`relative rounded-full overflow-hidden ring-4 ${PODIUM_RING[idx]} shadow-xl ${PODIUM_SIZE[idx]}`}>
+      <div className={`relative rounded-full overflow-hidden ring-4 ${PODIUM_RING[idx]} shadow-lg ${PODIUM_SIZE[idx]}`}>
         <Image src={entry.image} alt={entry.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
       </div>
 
       <div className="text-center max-w-[110px] sm:max-w-[140px]">
-        <Text variant="h4" color={isHero ? 'white' : 'dark'} className="line-clamp-1 group-hover:text-sky-400 transition-colors">
+        <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
           {entry.name}
-        </Text>
-        <div className={`text-lg font-extrabold ${isHero ? 'text-white' : 'text-slate-900'}`}>{entry.liveScore}</div>
-        <div className={`flex items-center justify-center gap-1 ${isHero ? 'text-white/50' : 'text-slate-400'}`}>
+        </h4>
+        <div className="text-base sm:text-lg font-extrabold text-sky-700">{entry.liveScore}</div>
+        <div className="flex items-center justify-center gap-1 text-slate-400 text-[10px]">
           {entry.trend === 'rising' ? (
-            <TrendingUp className={`w-3 h-3 ${isHero ? 'text-white' : 'text-sky-600'}`} />
+            <TrendingUp className="w-3 h-3 text-sky-600" />
           ) : (
-            <Minus className="w-3 h-3" />
+            <Minus className="w-3 h-3 text-slate-400" />
           )}
         </div>
       </div>
@@ -193,45 +180,43 @@ function PodiumCard({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank:
   );
 }
 
-function ListRow({ entry, rank, isHero }: { entry: LeaderboardEntryDto; rank: number; isHero: boolean }) {
+function ListRow({ entry, rank }: { entry: LeaderboardEntryDto; rank: number }) {
   return (
     <Link
       href={`/listings/${entry.slug}`}
-      className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl transition-colors group ${
-        isHero ? 'bg-white/[0.07] border border-white/15 hover:bg-white/[0.12]' : 'bg-white border border-slate-200 hover:bg-slate-50'
-      }`}
+      className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-sky-300 hover:shadow-md transition-all group"
     >
       <div className="flex flex-col items-center gap-0.5 w-6 shrink-0">
-        <span className={`text-sm font-extrabold ${isHero ? 'text-white/70' : 'text-slate-400'}`}>{rank}</span>
+        <span className="text-sm font-extrabold text-slate-400">{rank}</span>
         {entry.trend === 'rising' ? (
-          <TrendingUp className={`w-3 h-3 ${isHero ? 'text-white' : 'text-sky-600'}`} />
+          <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
         ) : (
-          <Minus className={`w-3 h-3 ${isHero ? 'text-white/30' : 'text-slate-300'}`} />
+          <Minus className="w-3.5 h-3.5 text-slate-300" />
         )}
       </div>
 
-      <div className="shrink-0" style={{ perspective: '500px' }}>
-        <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-slate-200 transition-transform duration-500 ease-out [@media(hover:hover)]:group-hover:[transform:rotateY(25deg)]">
+      <div className="shrink-0">
+        <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
           <Image src={entry.image} alt={entry.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
         </div>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Text variant="h4" color={isHero ? 'white' : 'dark'} className="line-clamp-1 group-hover:text-sky-400 transition-colors">
+          <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
             {entry.name}
-          </Text>
-          <ShieldCheck className={`w-4 h-4 shrink-0 ${isHero ? 'text-white' : 'text-sky-600'}`} />
+          </h4>
+          <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
         </div>
-        <div className={`flex items-center gap-1.5 text-[11px] not-italic ${isHero ? 'text-white/60' : 'text-slate-500'}`}>
-          <Quote className="w-3 h-3 shrink-0 opacity-60" />
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-normal">
+          <Quote className="w-3 h-3 shrink-0 text-slate-400" />
           <span className="line-clamp-1">&ldquo;{entry.highlight.quote}&rdquo;</span>
         </div>
       </div>
 
       <div className="text-right shrink-0">
-        <div className={`text-lg font-extrabold ${isHero ? 'text-white' : 'text-slate-900'}`}>{entry.liveScore}</div>
-        <div className={`text-[10px] font-semibold ${isHero ? 'text-white/50' : 'text-slate-400'}`}>
+        <div className="text-base sm:text-lg font-extrabold text-slate-900">{entry.liveScore}</div>
+        <div className="text-[10px] font-semibold text-slate-400">
           {entry.reviewCount > 0 ? `${entry.ratingAvg.toFixed(1)}★ (${entry.reviewCount})` : 'Awaiting reviews'}
         </div>
       </div>

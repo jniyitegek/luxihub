@@ -13,8 +13,10 @@ export interface AuthResult {
 
 export interface RegisterInput {
   name: string;
+  businessName?: string;
   email: string;
   password: string;
+  role?: UserRole;
   phone?: string;
   acceptedTerms: boolean;
 }

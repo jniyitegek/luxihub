@@ -28,7 +28,7 @@ const PLAN_CATALOG: Record<string, { name: string; monthlyPrice: number; annualP
 // Fetch the current subscription for the caller's business
 export async function GET(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
 // Upgrade/downgrade the caller's business subscription tier
 export async function POST(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const body = await req.json();
     const { businessId, planTier, billingCycle = 'MONTHLY' } = body;

@@ -86,7 +86,7 @@ const replySchema = z.object({
 /** Partner reply. Restricted to the owner of the reviewed listing. */
 export async function PATCH(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
     const { reviewId, partnerReply } = await parseBody(req, replySchema);
 
     const review = await prisma.review.findUnique({

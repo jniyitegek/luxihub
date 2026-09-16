@@ -12,7 +12,7 @@ const BOOST_PLANS: Record<string, { label: string; days: number; price: number }
 
 export async function GET(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 // Purchase a promotional visibility boost for the caller's business
 export async function POST(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const body = await req.json();
     const { businessId, plan } = body;

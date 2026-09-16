@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   CalendarCheck,
   MapPin,
-  Sparkles,
   Printer,
   CreditCard,
   Star,
@@ -82,7 +81,7 @@ export default function CustomerBookingsPage() {
             href="/explore"
             className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-sky-500/25 transition-all"
           >
-            <Sparkles className="w-4 h-4" />
+            
             <span>Book New Experience</span>
           </Link>
         }

@@ -36,7 +36,7 @@ const enrollSchema = z.object({
  */
 export async function POST(req: Request) {
   try {
-    const user = await requireRole('PARTNER', 'ADMIN');
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
     const input = await parseBody(req, enrollSchema);
 
     const course = await prisma.trainingCourse.findUnique({ where: { id: input.courseId } });

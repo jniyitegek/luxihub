@@ -16,17 +16,19 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
-  Compass,
+  Building2,
   AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 type Mode = 'login' | 'signup';
 
 const DEMO_QUICK_FILL = [
-  { label: 'Admin', email: 'admin@higalux.rw' },
-  { label: 'Partner', email: 'partner@retreat.rw' },
-  { label: 'Guest', email: 'customer@higalux.rw' },
+  { label: 'Root Admin', email: 'admin@mail.com', pass: 'Admin123' },
+  { label: 'Admin', email: 'admin@higalux.rw', pass: 'password123' },
+  { label: 'Service Owner', email: 'partner@retreat.rw', pass: 'password123' },
+  { label: 'Guest', email: 'customer@higalux.rw', pass: 'password123' },
 ];
 
 export default function LoginPage() {
@@ -34,7 +36,9 @@ export default function LoginPage() {
   const { login, register } = useAuth();
 
   const [mode, setMode] = useState<Mode>('login');
+  const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'SERVICE_OWNER'>('CUSTOMER');
   const [name, setName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -50,21 +54,14 @@ export default function LoginPage() {
     setFieldErrors({});
   };
 
-  /**
-   * Where to land after signing in. The `next` parameter is read from the URL
-   * at submit time rather than through `useSearchParams`, which would opt the
-   * whole page out of prerendering and leave visitors on a blank screen until
-   * hydration. Only same-site relative paths are accepted, so a crafted
-   * `?next=https://elsewhere` cannot turn this into an open redirect.
-   */
   const destinationFor = (role: string) => {
     const requested = new URLSearchParams(window.location.search).get('next');
     if (requested && requested.startsWith('/') && !requested.startsWith('//')) {
       return requested;
     }
     if (role === 'ADMIN') return '/admin/dashboard';
-    if (role === 'PARTNER') return '/partner/dashboard';
-    return '/customer/bookings';
+    if (role === 'SERVICE_OWNER' || role === 'PARTNER') return '/partner/dashboard';
+    return '/explore';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,17 +78,25 @@ export default function LoginPage() {
     try {
       const result =
         mode === 'signup'
-          ? await register({ name, email, password, phone: phone || undefined, acceptedTerms: agreed })
+          ? await register({
+              name,
+              businessName: selectedRole === 'SERVICE_OWNER' ? businessName : undefined,
+              email,
+              password,
+              role: selectedRole,
+              phone: phone || undefined,
+              acceptedTerms: agreed,
+            })
           : await login(email, password);
 
       if (!result.ok) {
-        setError(result.error || 'Could not sign you in.');
+        const fieldMsgs = result.fieldErrors ? Object.values(result.fieldErrors).join('. ') : '';
+        const mainErr = result.error || 'Could not sign you in.';
+        setError(fieldMsgs ? `${mainErr}: ${fieldMsgs}` : mainErr);
         setFieldErrors(result.fieldErrors ?? {});
         return;
       }
 
-      // The session cookie decides what the account may open; the redirect is
-      // only a convenience, and the middleware corrects it if it is wrong.
       const me = await fetch('/api/auth/me', { cache: 'no-store' }).then((r) => r.json());
       router.replace(destinationFor(me?.user?.role ?? 'CUSTOMER'));
       router.refresh();
@@ -103,57 +108,59 @@ export default function LoginPage() {
   const inputClass =
     'w-full h-12 rounded-full bg-white pl-12 pr-4 text-sm font-semibold text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60';
 
-  const fieldError = (key: string) =>
-    fieldErrors[key] ? <p className="mt-1.5 ml-4 text-[11px] font-semibold text-rose-100">{fieldErrors[key]}</p> : null;
+  const isMinLength = password.length >= 10;
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+
+  const fieldError = (key: string) => {
+    if (!fieldErrors[key]) return null;
+    return (
+      <div className="mt-1.5 px-3.5 py-1.5 rounded-xl bg-rose-950/70 border border-rose-300/40 flex items-center gap-2 text-xs font-bold text-rose-100 shadow-md">
+        <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
+        <span>{fieldErrors[key]}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white">
 
-      {/* LEFT: Brand / Welcome panel — hidden below lg */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center bg-slate-50 overflow-hidden p-12">
-        <div className="absolute -left-24 top-1/2 -translate-y-1/2 w-[560px] h-[420px] bg-gradient-to-br from-sky-500 to-sky-700 rounded-[50%] blur-2xl opacity-90 -rotate-6" />
-        <div className="absolute left-0 top-0 w-72 h-72 bg-sky-400/20 rounded-full blur-3xl" />
-
+      {/* LEFT: Clean Brand & Tagline Panel — no filler graphics */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between bg-slate-50 p-16">
         <Link
           href="/"
-          className="absolute top-8 left-8 w-10 h-10 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-200 transition-colors z-10"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-200 transition-colors"
           aria-label="Back to home"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </Link>
 
-        <div className="relative z-10 max-w-sm text-center space-y-8">
+        <div className="max-w-md my-auto space-y-6">
           <Image
             src="/logo/higa_logo_horizontal_blue.png"
             alt="Higa Lux"
             width={540}
             height={180}
-            className="h-[108px] w-auto mx-auto"
+            className="h-16 w-auto"
             priority
           />
 
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Welcome to <span className="font-serif italic text-sky-700">Higa Lux</span>
           </h1>
 
-          <div className="relative mx-auto w-56 h-56">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-sky-100 to-sky-200 shadow-2xl border-4 border-white overflow-hidden flex items-center justify-center">
-              <Compass className="w-20 h-20 text-sky-600/60" strokeWidth={1.25} />
-            </div>
-            <Sparkles className="absolute -top-2 -right-2 w-8 h-8 text-sky-500" />
-            <Sparkles className="absolute bottom-4 -left-4 w-5 h-5 text-sky-400" />
-          </div>
-
-          <p className="text-base font-bold text-slate-900">
+          <p className="text-base font-bold text-slate-600 leading-relaxed">
             Verified luxury stays across the Land of a Thousand Hills
           </p>
         </div>
+
+        <div className="text-xs text-slate-400 font-medium">
+          © {new Date().getFullYear()} Higa Lux. All rights reserved.
+        </div>
       </div>
 
-      {/* RIGHT: Form panel */}
-      <div className="flex-1 relative flex items-center justify-center bg-gradient-to-b from-sky-600 via-sky-700 to-sky-800 overflow-hidden py-12 px-6">
-        <div className="absolute -bottom-24 -left-16 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -top-16 -right-16 w-72 h-72 bg-sky-400/20 rounded-full blur-3xl pointer-events-none" />
+      {/* RIGHT: Clean Form Panel */}
+      <div className="flex-1 relative flex items-center justify-center bg-gradient-to-b from-sky-600 via-sky-700 to-sky-800 py-12 px-6">
 
         <Link
           href="/"
@@ -173,16 +180,11 @@ export default function LoginPage() {
             className="lg:hidden h-9 w-auto mx-auto mb-2"
           />
 
-          <div className="flex items-start justify-between">
-            <div className="space-y-1 text-white">
-              <h2 className="text-3xl font-extrabold tracking-tight">Welcome!</h2>
-              <p className="text-sm font-medium text-white/80">
-                {mode === 'login' ? 'Sign in to continue' : 'Create your guest account'}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shrink-0">
-              <Compass className="w-6 h-6" />
-            </div>
+          <div className="space-y-1 text-white">
+            <h2 className="text-3xl font-extrabold tracking-tight">Welcome!</h2>
+            <p className="text-sm font-medium text-white/80">
+              {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
+            </p>
           </div>
 
           {/* Mode Tabs */}
@@ -201,13 +203,45 @@ export default function LoginPage() {
             ))}
           </div>
 
+          {mode === 'signup' && (
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/10 border border-white/20">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('CUSTOMER')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                    selectedRole === 'CUSTOMER'
+                      ? 'bg-white text-sky-800 shadow-sm'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  Guest / Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('SERVICE_OWNER')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                    selectedRole === 'SERVICE_OWNER'
+                      ? 'bg-white text-sky-800 shadow-sm'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  Service Owner
+                </button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div
               role="alert"
-              className="p-3 rounded-2xl bg-rose-900/40 border border-rose-200/30 flex items-center gap-2 text-xs text-white"
+              className="p-3.5 rounded-2xl bg-rose-950/70 border border-rose-300/40 flex items-start gap-2.5 text-xs text-white shadow-lg"
             >
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <AlertCircle className="w-5 h-5 shrink-0 text-rose-300 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-extrabold text-rose-100">Validation Error</p>
+                <p className="text-white/90 leading-relaxed">{error}</p>
+              </div>
             </div>
           )}
 
@@ -220,13 +254,31 @@ export default function LoginPage() {
                     type="text"
                     required
                     autoComplete="name"
-                    placeholder="Full name"
+                    placeholder="Full name (Personal)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={inputClass}
                   />
                 </div>
                 {fieldError('name')}
+              </div>
+            )}
+
+            {/* Separate Business / Establishment Name input for Service Owners */}
+            {mode === 'signup' && selectedRole === 'SERVICE_OWNER' && (
+              <div>
+                <div className="relative">
+                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Business / Establishment Name"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                {fieldError('businessName')}
               </div>
             )}
 
@@ -260,6 +312,9 @@ export default function LoginPage() {
                   />
                 </div>
                 {fieldError('phone')}
+                <p className="mt-1 ml-3 text-[11px] text-white/70">
+                  Rwandan mobile format: +250 78X XXX XXX or 078X XXX XXX (Leave blank if non-Rwandan).
+                </p>
               </div>
             )}
 
@@ -285,10 +340,49 @@ export default function LoginPage() {
                 </button>
               </div>
               {fieldError('password')}
-              {mode === 'signup' && !fieldErrors.password && (
-                <p className="mt-1.5 ml-4 text-[11px] text-white/70">
-                  At least 10 characters, including a letter and a number.
-                </p>
+
+              {mode === 'signup' && (
+                <div className="mt-2.5 p-3.5 rounded-2xl bg-slate-900/40 border border-white/20 backdrop-blur-sm space-y-2 text-xs text-white">
+                  <div className="flex items-center justify-between font-bold text-white/90 text-[11px] pb-1 border-b border-white/10">
+                    <span>Password Requirements:</span>
+                    <span className={isMinLength ? 'text-emerald-300 font-extrabold' : 'text-amber-300 font-bold'}>
+                      {password.length} / 10 characters
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isMinLength ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    )}
+                    <span className={isMinLength ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                      At least 10 characters long {password.length > 0 && !isMinLength ? `(add ${10 - password.length} more)` : ''}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {hasLetter ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    )}
+                    <span className={hasLetter ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                      At least 1 letter (a-z, A-Z)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {hasNumber ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    )}
+                    <span className={hasNumber ? 'text-emerald-200 font-bold' : 'text-white/80'}>
+                      At least 1 number (0-9)
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 

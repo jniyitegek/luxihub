@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { 
   Star, 
   CheckCircle2, 
   Copy, 
   Check, 
   ExternalLink, 
-  ShieldCheck, 
   Building2, 
-  Sparkles,
+  Compass,
+  UtensilsCrossed,
+  Tag,
+  Search,
   AlertCircle,
-  Instagram
+  Instagram,
+  X,
+  Sparkles
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -19,8 +24,8 @@ import { Button } from '@/components/ui/Button';
 export interface RateServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  serviceId: string;
-  serviceName: string;
+  serviceId?: string;
+  serviceName?: string;
   onSuccess?: (newRating: any) => void;
 }
 
@@ -32,14 +37,43 @@ const RATING_LABELS: Record<number, string> = {
   5: 'Exceptional',
 };
 
+export type ServiceTypeCategory = 'STAYS' | 'EXPERIENCES' | 'DINING' | 'OTHER';
+
+const SERVICE_TYPES: { key: ServiceTypeCategory; label: string; icon: React.ElementType }[] = [
+  { key: 'STAYS', label: 'Stays', icon: Building2 },
+  { key: 'EXPERIENCES', label: 'Experiences', icon: Compass },
+  { key: 'DINING', label: 'Dining', icon: UtensilsCrossed },
+  { key: 'OTHER', label: 'Other', icon: Tag },
+];
+
 export function RateServiceModal({
   isOpen,
   onClose,
-  serviceId,
-  serviceName,
+  serviceId: initialServiceId,
+  serviceName: initialServiceName,
   onSuccess,
 }: RateServiceModalProps) {
   const [step, setStep] = useState<'form' | 'instagram'>('form');
+  
+  // Search & Listing Selection State
+  const [searchQuery, setSearchQuery] = useState<string>(initialServiceName || '');
+  const [selectedListing, setSelectedListing] = useState<{
+    id: string;
+    name: string;
+    type: string;
+    location?: string;
+    image?: string;
+  } | null>(initialServiceId && initialServiceName ? { id: initialServiceId, name: initialServiceName, type: 'HOTEL' } : null);
+  
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState<boolean>(false);
+  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Service Type State
+  const [serviceType, setServiceType] = useState<ServiceTypeCategory>('STAYS');
+
+  // Form State
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
@@ -48,9 +82,103 @@ export function RateServiceModal({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [submittedServiceName, setSubmittedServiceName] = useState<string>('');
+
+  // Sync initial props when opened
+  useEffect(() => {
+    if (isOpen) {
+      if (initialServiceName) {
+        setSearchQuery(initialServiceName);
+        setSelectedListing({
+          id: initialServiceId || '',
+          name: initialServiceName,
+          type: 'HOTEL',
+        });
+      } else {
+        setSearchQuery('');
+        setSelectedListing(null);
+      }
+    }
+  }, [isOpen, initialServiceId, initialServiceName]);
+
+  // Click outside listener for autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Live Autocomplete search against live listings table
+  useEffect(() => {
+    if (!isOpen || selectedListing) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 1) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/businesses?q=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        if (data.businesses) {
+          setSearchResults(data.businesses);
+          setShowDropdown(true);
+        }
+      } catch (err) {
+        console.error('Failed to search businesses:', err);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedListing, isOpen]);
+
+  const mapDbTypeToCategory = (type?: string): ServiceTypeCategory => {
+    if (!type) return 'STAYS';
+    const upper = type.toUpperCase();
+    if (upper === 'HOTEL' || upper === 'STAYS') return 'STAYS';
+    if (upper === 'RESTAURANT' || upper === 'DINING') return 'DINING';
+    if (upper === 'TOUR' || upper === 'EXPERIENCES') return 'EXPERIENCES';
+    return 'OTHER';
+  };
+
+  const handleSelectListing = (biz: any) => {
+    setSelectedListing({
+      id: biz.id,
+      name: biz.name,
+      type: biz.type,
+      location: biz.location,
+      image: biz.images?.[0],
+    });
+    setSearchQuery(biz.name);
+    setServiceType(mapDbTypeToCategory(biz.type));
+    setShowDropdown(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedListing(null);
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
 
   const resetModalState = () => {
     setStep('form');
+    setSearchQuery(initialServiceName || '');
+    setSelectedListing(initialServiceId && initialServiceName ? { id: initialServiceId, name: initialServiceName, type: 'HOTEL' } : null);
+    setServiceType('STAYS');
     setRating(0);
     setHoverRating(0);
     setComment('');
@@ -59,6 +187,7 @@ export function RateServiceModal({
     setLoading(false);
     setError(null);
     setCopied(false);
+    setSubmittedServiceName('');
   };
 
   const handleClose = () => {
@@ -68,6 +197,13 @@ export function RateServiceModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const finalServiceName = searchQuery.trim();
+    if (!finalServiceName) {
+      setError('Please search or enter a Service / Property Name.');
+      return;
+    }
+
     if (rating < 1) {
       setError('Please select a star rating (1 to 5 stars).');
       return;
@@ -77,17 +213,21 @@ export function RateServiceModal({
     setLoading(true);
 
     try {
+      const payload = {
+        serviceId: selectedListing ? selectedListing.id : null,
+        serviceName: finalServiceName,
+        serviceType,
+        isUnregistered: !selectedListing,
+        rating,
+        comment,
+        reviewerName,
+        hp_field: hpField,
+      };
+
       const res = await fetch('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceId,
-          serviceName,
-          rating,
-          comment,
-          reviewerName,
-          hp_field: hpField,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -95,6 +235,8 @@ export function RateServiceModal({
       if (!res.ok) {
         throw new Error(data.error || 'Failed to submit rating.');
       }
+
+      setSubmittedServiceName(finalServiceName);
 
       if (onSuccess) {
         onSuccess(data.rating);
@@ -110,9 +252,10 @@ export function RateServiceModal({
   };
 
   // Generate suggested caption text for Instagram
-  const sanitizedServiceName = serviceName.replace(/[^a-zA-Z0-9]/g, '');
+  const displayServiceName = submittedServiceName || searchQuery || 'Service';
+  const sanitizedServiceName = displayServiceName.replace(/[^a-zA-Z0-9]/g, '');
   const starsString = '⭐'.repeat(rating || 5);
-  const suggestedCaption = `Loved my experience with ${serviceName}! ${starsString} Rated on @higa_luxuries #HigaLuxuries #${sanitizedServiceName} #RwandaLuxury`;
+  const suggestedCaption = `Loved my experience with ${displayServiceName}! ${starsString} Rated on @higa_luxuries #HigaLuxuries #${sanitizedServiceName} #RwandaLuxury`;
 
   const handleCopyCaption = async () => {
     try {
@@ -127,7 +270,6 @@ export function RateServiceModal({
   const handleOpenInstagram = () => {
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      // Attempt deep link on mobile devices
       window.location.href = 'instagram://app';
       setTimeout(() => {
         window.open('https://www.instagram.com', '_blank');
@@ -143,37 +285,153 @@ export function RateServiceModal({
       onClose={handleClose}
       title={
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-sky-600" />
+          <Star className="w-5 h-5 text-sky-600 fill-sky-600" />
           <span>{step === 'form' ? 'Rate a Service' : 'Share Your Experience'}</span>
         </div>
       }
       subtitle={
         step === 'form'
-          ? 'Public Guest Review • No account required'
+          ? 'Public Guest Review • Search property or submit new'
           : 'Thank you! Help others discover great services'
       }
       size="md"
     >
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-5">
         {step === 'form' ? (
           <form onSubmit={handleSubmit} className="space-y-5">
             
-            {/* Service Name (Read-only context) */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-sky-600" />
-                <span>Service / Property Name</span>
+            {/* 1. Service / Property Name Field with Searchable Autocomplete */}
+            <div className="space-y-1.5 relative" ref={dropdownRef}>
+              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Service / Property Name</span>
+                  <span className="text-red-500">*</span>
+                </span>
+                {selectedListing ? (
+                  <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Registered Listing
+                  </span>
+                ) : searchQuery.trim().length > 0 ? (
+                  <span className="text-[10px] text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Unregistered Service
+                  </span>
+                ) : null}
               </label>
-              <input
-                type="text"
-                readOnly
-                value={serviceName}
-                className="w-full px-4 py-2.5 rounded-2xl bg-slate-100 border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none cursor-not-allowed"
-              />
+
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (selectedListing) setSelectedListing(null);
+                  }}
+                  onFocus={() => {
+                    if (searchResults.length > 0 && !selectedListing) setShowDropdown(true);
+                  }}
+                  placeholder="Type property name (e.g. Cleo Lake Kivu, Singita, or custom name)..."
+                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-900 text-xs font-semibold focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 focus:outline-none transition-all placeholder:font-normal"
+                />
+                {(searchQuery || selectedListing) && (
+                  <button
+                    type="button"
+                    onClick={handleClearSelection}
+                    className="absolute right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                    title="Clear property name"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete Dropdown List */}
+              {showDropdown && !selectedListing && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl max-h-60 overflow-y-auto divide-y divide-slate-100">
+                  {searching ? (
+                    <div className="p-4 text-center text-xs text-slate-500 font-medium">
+                      Searching listings database...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((biz) => (
+                      <button
+                        key={biz.id}
+                        type="button"
+                        onClick={() => handleSelectListing(biz)}
+                        className="w-full p-3 text-left hover:bg-sky-50/70 flex items-center justify-between transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
+                            {biz.images?.[0] ? (
+                              <Image
+                                src={biz.images[0]}
+                                alt={biz.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <Building2 className="w-4 h-4 text-slate-400 m-auto" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-xs font-extrabold text-slate-900 group-hover:text-sky-700 transition-colors">
+                              {biz.name}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-medium">
+                              {biz.location} • {biz.type}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded-lg border border-sky-100">
+                          Select
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-xs text-slate-600 space-y-1">
+                      <p className="font-semibold text-slate-800">No matching registered listing found</p>
+                      <p className="text-[11px] text-slate-500">
+                        You can continue submitting <strong>&quot;{searchQuery}&quot;</strong> as a new/unregistered service name.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Star Rating Input (Required) */}
-            <div className="space-y-2 text-center p-5 rounded-2xl bg-sky-50/50 border border-sky-100">
+            {/* 2. Service Type Field (Required) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <span>Service Type / Category <span className="text-red-500">*</span></span>
+                <span className="text-[10px] text-slate-400 font-normal">Required</span>
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {SERVICE_TYPES.map((type) => {
+                  const Icon = type.icon;
+                  const isSelected = serviceType === type.key;
+                  return (
+                    <button
+                      key={type.key}
+                      type="button"
+                      onClick={() => setServiceType(type.key)}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        isSelected
+                          ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-600/20'
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-sky-300 hover:bg-sky-50/40'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-sky-600'}`} />
+                      <span>{type.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Star Rating Input (Required) */}
+            <div className="space-y-2 text-center p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
               <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider block">
                 Your Overall Rating <span className="text-red-500">*</span>
               </label>
@@ -211,22 +469,25 @@ export function RateServiceModal({
               </div>
             </div>
 
-            {/* Reviewer Name (Optional, defaults to Anonymous) */}
+            {/* 4. Reviewer Name (Optional with Anonymity Guidance) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                 <span>Your Name</span>
-                <span className="text-[10px] text-slate-400 font-normal">Optional (Defaults to Anonymous)</span>
+                <span className="text-[10px] text-slate-400 font-normal">Optional (Leave blank to submit anonymously)</span>
               </label>
               <input
                 type="text"
                 value={reviewerName}
                 onChange={(e) => setReviewerName(e.target.value)}
-                placeholder="e.g. Clarisse M. or leave blank"
+                placeholder="e.g. Clarisse M. or leave blank for Anonymous"
                 className="w-full px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 focus:outline-none transition-all"
               />
+              <p className="text-[11px] text-slate-500 font-normal">
+                Your review will be publicly visible on the live leaderboard. If left blank, it will display as <strong>Anonymous</strong>.
+              </p>
             </div>
 
-            {/* Review Comment (Optional) */}
+            {/* 5. Review Comment (Optional) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                 <span>Short Review / Feedback</span>
@@ -261,13 +522,7 @@ export function RateServiceModal({
               </div>
             )}
 
-            {/* Privacy Guarantee Note */}
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium pt-1">
-              <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>100% Public &amp; Anonymous Guest Protection</span>
-            </div>
-
-            {/* Actions */}
+            {/* Form Actions */}
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
               <Button
                 type="button"
@@ -302,7 +557,7 @@ export function RateServiceModal({
             <div className="space-y-1">
               <h3 className="text-xl font-extrabold text-slate-900">Rating Saved!</h3>
               <p className="text-xs text-slate-600">
-                Your <strong className="text-slate-900">{rating}-star rating</strong> for <strong className="text-sky-700">{serviceName}</strong> has been saved.
+                Your <strong className="text-slate-900">{rating}-star rating</strong> for <strong className="text-sky-700">{displayServiceName}</strong> has been saved.
               </p>
             </div>
 
@@ -382,3 +637,4 @@ export function RateServiceModal({
     </Modal>
   );
 }
+

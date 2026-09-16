@@ -6,16 +6,11 @@ import { SearchWidget } from '@/components/landing/SearchWidget';
 import { WhyLuxeHub } from '@/components/landing/WhyLuxeHub';
 import { FeaturedCarousel } from '@/components/landing/FeaturedCarousel';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
-import { Text } from '@/components/ui/Text';
 import {
-  Sparkles,
-  MapPin,
   ShieldCheck,
   ArrowRight,
   Building2,
-  GraduationCap,
-  Award,
-  Compass
+  GraduationCap
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -51,64 +46,63 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="w-full space-y-0 pb-0">
+    <div className="w-full bg-[#FAF9F6] text-slate-900 min-h-screen">
       
-      {/* 1. Hero: The Live Leaderboard — who guests are highlighting right now */}
-      <LiveLeaderboard variant="hero" />
+      {/* 1. Hero: Live Leaderboard Section */}
+      <div id="leaderboard" className="scroll-mt-24">
+        <LiveLeaderboard variant="hero" />
+      </div>
 
-      {/* 1b. Extras: booking & direct search, secondary to the leaderboard */}
-      <section className="w-full bg-[#0B1B36] pt-2 pb-16 px-4 sm:px-6 lg:px-8">
+      {/* 1b. Search widget section */}
+      <section id="browse" className="w-full bg-[#FAF9F6] pt-4 pb-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 scroll-mt-24">
         <div className="max-w-4xl mx-auto text-center mb-4">
-          <Text variant="h3" color="white">
+          <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
             Ready to book directly? Search verified stays in seconds.
-          </Text>
+          </h3>
         </div>
         <SearchWidget />
       </section>
 
       {/* 2. Why Higa Lux Quality Assurance */}
-      <WhyLuxeHub />
+      <div id="why-higalux" className="scroll-mt-24">
+        <WhyLuxeHub />
+      </div>
 
       {/* 3. Featured Certified Partners */}
-      <div className="w-full bg-white py-8">
+      <div id="featured" className="w-full bg-white py-8 border-y border-slate-200/80 scroll-mt-24">
         <FeaturedCarousel />
       </div>
 
-      {/* 4. Destinations Spotlight Section — Sky blue main background */}
-      <section className="w-full bg-gradient-to-b from-sky-600 via-sky-700 to-sky-800 text-white py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        {/* Ambient Glowing Blobs */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-sky-300/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto space-y-12">
+      {/* 4. Destinations Spotlight Section */}
+      <section id="destinations" className="w-full bg-[#FAF9F6] text-slate-900 py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 scroll-mt-24">
+        <div className="max-w-7xl mx-auto space-y-10">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-                Explore by <span className="text-white/90 italic">Iconic Destination</span>
+            <div className="space-y-2">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+                Explore by <span className="text-sky-600 italic">Iconic Destination</span>
               </h2>
-              <p className="text-sm sm:text-base text-white/70 max-w-2xl font-normal">
+              <p className="text-sm sm:text-base text-slate-600 max-w-2xl font-normal">
                 From volcanic cloud forests to urban fine dining and sapphire lake shores.
               </p>
             </div>
 
             <Link
               href="/explore"
-              className="text-xs font-bold text-white hover:text-white/80 flex items-center gap-2 transition-colors group self-start md:self-auto bg-white/10 hover:bg-white/20 px-5 py-2.5 rounded-full border border-white/20"
+              className="text-xs font-bold text-sky-700 hover:text-sky-600 flex items-center gap-2 transition-colors group self-start md:self-auto bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200/90 shadow-sm"
             >
               <span>View All Regions</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
-          {/* Region cards with darker blue overlay */}
+          {/* Region cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {regions.map((reg, i) => (
               <Link
                 key={i}
                 href={`/explore?location=${reg.location}`}
-                className="group relative h-96 rounded-3xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500 shadow-xl hover:shadow-2xl hover:-translate-y-1.5"
+                className="group relative h-96 rounded-3xl overflow-hidden border border-slate-200/80 transition-all duration-500 shadow-md hover:shadow-xl hover:-translate-y-1"
               >
                 <Image
                   src={reg.image}
@@ -116,19 +110,19 @@ export default function HomePage() {
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B1B36]/95 via-[#0B1B36]/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
 
                 <div className="absolute top-4 right-4">
-                  <span className="text-[11px] font-extrabold text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_60%)]">
+                  <span className="text-[11px] font-extrabold text-white bg-slate-900/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
                     {reg.count}
                   </span>
                 </div>
 
                 <div className="absolute bottom-6 left-6 right-6 space-y-1.5">
-                  <h3 className="text-2xl font-extrabold text-white group-hover:text-sky-200 transition-colors">
+                  <h3 className="text-2xl font-extrabold text-white group-hover:text-sky-300 transition-colors">
                     {reg.name}
                   </h3>
-                  <p className="text-xs font-medium text-white/70">
+                  <p className="text-xs font-medium text-slate-200">
                     {reg.tagline}
                   </p>
                 </div>
@@ -140,34 +134,34 @@ export default function HomePage() {
       </section>
 
       {/* 5. Verified Reviews Module */}
-      <div className="w-full bg-slate-50 border-t border-slate-200">
+      <div id="testimonials" className="w-full bg-white border-b border-slate-200/80 scroll-mt-24">
         <TestimonialsSection />
       </div>
 
-      {/* 6. Partner Hospitality Academy & Certification — Darker blue background */}
-      <section className="w-full bg-gradient-to-r from-[#0B1B36] via-[#0D2240] to-[#0B1B36] text-white py-20 px-4 sm:px-6 lg:px-8 border-t border-sky-800/40 relative overflow-hidden">
-        
-        {/* Ambient Shape Glow */}
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-sky-500/15 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-sky-400/10 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10 relative z-10">
+      {/* 6. Partner Hospitality Academy & Certification */}
+      <section id="certification" className="w-full bg-[#FAF9F6] text-slate-900 py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 scroll-mt-24">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10 bg-white p-8 sm:p-12 rounded-3xl border border-slate-200/90 shadow-md">
           
           <div className="space-y-4 max-w-2xl">
-            <h3 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold">
+              
+              <span>Hospitality Certification</span>
+            </div>
+
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
               Get Certified with the <br />
-              <span className="text-sky-400 italic">Higa Lux Quality Mark</span>
+              <span className="text-sky-600 italic">Higa Lux Quality Mark</span>
             </h3>
-            <p className="text-sm sm:text-base text-white/60 leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
               Join Rwanda&apos;s most prestigious network of 5-star hospitality providers. Receive professional 40-point audits, staff masterclasses at the Hospitality Academy, and direct verified booking escrow.
             </p>
             <div className="pt-2 flex flex-wrap gap-5 text-xs font-semibold">
-              <div className="flex items-center gap-2 text-white/80">
-                <ShieldCheck className="w-4 h-4 text-sky-400" />
+              <div className="flex items-center gap-2 text-slate-700">
+                <ShieldCheck className="w-4 h-4 text-sky-600" />
                 <span>Zero Listing Setup Fees</span>
               </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <GraduationCap className="w-4 h-4 text-sky-400" />
+              <div className="flex items-center gap-2 text-slate-700">
+                <GraduationCap className="w-4 h-4 text-sky-600" />
                 <span>Silver Service Staff Masterclasses</span>
               </div>
             </div>
@@ -176,16 +170,16 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto shrink-0">
             <Link
               href="/partner/dashboard"
-              className="px-8 py-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-sky-500/30 hover:scale-105 active:scale-95 transition-all text-center"
+              className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-600/25 transition-all text-center"
             >
-              <Building2 className="w-4 h-4 text-slate-950" />
+              <Building2 className="w-4 h-4" />
               <span>Access Partner Portal</span>
             </Link>
             <Link
               href="/partner/academy"
-              className="px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-white/20 transition-all text-center"
+              className="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200 transition-all text-center"
             >
-              <GraduationCap className="w-4 h-4 text-sky-300" />
+              <GraduationCap className="w-4 h-4 text-sky-600" />
               <span>Browse Academy</span>
             </Link>
           </div>

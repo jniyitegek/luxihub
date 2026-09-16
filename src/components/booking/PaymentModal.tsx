@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Smartphone, CreditCard, ShieldCheck, Sparkles, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { Smartphone, CreditCard, ShieldCheck, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 import { BookingDto } from '@/lib/types';
 import { formatRwf } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
@@ -306,7 +306,6 @@ export function PaymentModal({ booking, isOpen, onClose, onPaymentSuccess }: Pay
               variant="primary"
               fullWidth
               className="!rounded-2xl bg-gradient-to-r from-sky-600 to-blue-700 hover:opacity-95 hover:scale-[1.01] active:scale-95"
-              leftIcon={!processing ? <Sparkles className="w-4 h-4 text-white" /> : undefined}
             >
               {processing ? 'Contacting the gateway…' : `Authorize & pay ${formatRwf(payableAmount)}`}
             </Button>

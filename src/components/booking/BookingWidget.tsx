@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, ShieldCheck, Sparkles, Check, ArrowRight, Loader2, Lock } from 'lucide-react';
+import { Calendar, Users, ShieldCheck, Check, ArrowRight, Loader2, Lock } from 'lucide-react';
 import { BusinessListing, ServiceOfferingDto, BookingDto } from '@/lib/types';
 import { formatRwf, formatUsd } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -279,7 +279,6 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 text-white" />
                 <span>Reserve & Pay via MoMo / Card</span>
                 <ArrowRight className="w-4 h-4 text-white" />
               </>
