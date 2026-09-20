@@ -1,106 +1,182 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { forbidden, handleRouteError, notFound, parseBody, requireUser } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  try {
-    const { id } = params;
+export const dynamic = 'force-dynamic';
 
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  try {
     const business = await prisma.business.findFirst({
-      where: {
-        OR: [{ id }, { slug: id }],
-      },
+      where: { OR: [{ id: params.id }, { slug: params.id }] },
       include: {
-        offerings: {
-          where: { isAvailable: true },
-        },
+        offerings: { where: { isAvailable: true } },
         reviews: {
           orderBy: { createdAt: 'desc' },
-          include: {
-            customer: {
-              select: { name: true, avatarUrl: true },
-            },
-          },
+          include: { customer: { select: { name: true, avatarUrl: true } } },
         },
-        audits: {
-          orderBy: { auditDate: 'desc' },
-          take: 1,
-        },
+        audits: { orderBy: { auditDate: 'desc' }, take: 1 },
       },
     });
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
+    if (!business) throw notFound('Business not found');
+
+    // Listings that are pending approval or suspended stay hidden from the
+    // public directory; the owner and administrators can still open them.
+    if (business.status !== 'VERIFIED') {
+      const user = await getCurrentUser();
+      const canView = user && (user.role === 'ADMIN' || business.ownerId === user.id);
+      if (!canView) throw notFound('Business not found');
     }
 
-    const formatted = {
-      ...business,
-      amenities: JSON.parse(business.amenities || '[]'),
-      images: JSON.parse(business.images || '[]'),
-      qualityScore: business.audits[0]?.score ?? null,
-      offerings: business.offerings.map((o) => ({
-        ...o,
-        images: JSON.parse(o.images || '[]'),
-        inclusions: JSON.parse(o.inclusions || '[]'),
-      })),
-      audits: business.audits.map((a) => ({
-        ...a,
-        inspectionItems: JSON.parse(a.inspectionItems || '[]'),
-      })),
-    };
+    const ratings = await prisma.serviceRating.findMany({
+      where: { serviceId: business.id },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    return NextResponse.json({ success: true, business: formatted });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch business' }, { status: 500 });
+    const combinedReviews = [
+      ...business.reviews.map((r) => ({
+        id: r.id,
+        reviewerName: r.customer?.name || 'Verified Traveler',
+        reviewerAvatar: r.customer?.avatarUrl || null,
+        rating: r.rating,
+        cleanlinessRating: r.cleanlinessRating,
+        serviceRating: r.serviceRating,
+        hospitalityRating: r.hospitalityRating,
+        valueRating: r.valueRating,
+        title: r.title,
+        comment: r.comment,
+        partnerReply: r.partnerReply,
+        partnerRepliedAt: r.partnerRepliedAt?.toISOString() ?? null,
+        isVerified: r.isVerified,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      ...ratings.map((sr) => ({
+        id: sr.id,
+        reviewerName: sr.reviewerName || 'Anonymous Traveler',
+        reviewerAvatar: null,
+        rating: sr.rating,
+        cleanlinessRating: sr.rating,
+        serviceRating: sr.rating,
+        hospitalityRating: sr.rating,
+        valueRating: sr.rating,
+        title: `${sr.rating}-Star Verified Rating`,
+        comment: sr.comment || '',
+        partnerReply: null,
+        partnerRepliedAt: null,
+        isVerified: !(sr as any).isUnregistered,
+        createdAt: sr.createdAt.toISOString(),
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({
+      success: true,
+      business: {
+        ...business,
+        reviews: combinedReviews,
+        amenities: JSON.parse(business.amenities || '[]'),
+        images: JSON.parse(business.images || '[]'),
+        qualityScore: business.audits[0]?.score ?? null,
+        offerings: business.offerings.map((o) => ({
+          ...o,
+          images: JSON.parse(o.images || '[]'),
+          inclusions: JSON.parse(o.inclusions || '[]'),
+          attributes: JSON.parse((o as any).attributes || '{}'),
+          coverImage: (o as any).coverImage || (JSON.parse(o.images || '[]')[0] ?? null),
+        })),
+        audits: business.audits.map((a) => ({
+          ...a,
+          inspectionItems: JSON.parse(a.inspectionItems || '[]'),
+        })),
+      },
+    });
+  } catch (error) {
+    return handleRouteError(error, 'businesses/[id] GET');
   }
 }
 
+const imagePathOrUrl = z.string().trim().refine(
+  (val) => !val || val.startsWith('/') || val.startsWith('http://') || val.startsWith('https://'),
+  { message: 'Must be a valid URL or image path' }
+);
+
+const patchSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  type: z.enum(['HOTEL', 'RESTAURANT', 'TOUR']).optional(),
+  description: z.string().trim().min(10).max(5000).optional(),
+  shortTagline: z.string().trim().max(160).optional(),
+  address: z.string().trim().min(3).max(240).optional(),
+  location: z.enum(['Kigali', 'Musanze', 'Rubavu', 'Nyungwe', 'Akagera']).optional(),
+  basePrice: z.coerce.number().positive().max(100_000_000).optional(),
+  amenities: z.array(z.string().trim().max(120)).max(40).optional(),
+  images: z.array(imagePathOrUrl).max(20).optional(),
+  phone: z.string().trim().max(32).optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
+  website: z.string().trim().optional().or(z.literal('')),
+  logoUrl: imagePathOrUrl.optional().or(z.literal('')),
+
+  // Administrator-only governance fields
+  status: z.enum(['PENDING', 'VERIFIED', 'SUSPENDED']).optional(),
+  certificationBadge: z.enum(['LUXE_VERIFIED', 'GOLD_STANDARD', 'ECO_SUSTAINABLE', 'NONE']).optional(),
+  isFeatured: z.boolean().optional(),
+  isVerified: z.boolean().optional(),
+  needsAdminAudit: z.boolean().optional(),
+});
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await requireUser();
+    const input = await parseBody(req, patchSchema);
 
-    const { id } = params;
-    const body = await req.json();
-
-    const existing = await prisma.business.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
-
+    const existing = await prisma.business.findUnique({ where: { id: params.id } });
+    if (!existing) throw notFound('Business not found');
     if (user.role !== 'ADMIN' && existing.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
-    const updateData: any = {};
-    if (body.name) updateData.name = body.name;
-    if (body.description) updateData.description = body.description;
-    if (body.shortTagline) updateData.shortTagline = body.shortTagline;
-    if (body.address) updateData.address = body.address;
-    if (body.location) updateData.location = body.location;
-    if (body.basePrice) updateData.basePrice = parseFloat(body.basePrice);
-    if (body.amenities) updateData.amenities = JSON.stringify(body.amenities);
-    if (body.images) updateData.images = JSON.stringify(body.images);
-    if (body.phone) updateData.phone = body.phone;
-    if (body.email) updateData.email = body.email;
-    if (body.website) updateData.website = body.website;
+    const data: Record<string, unknown> = {};
+    const assign = <K extends keyof typeof input>(key: K) => {
+      if (input[key] !== undefined) data[key as string] = input[key];
+    };
 
-    // Admin-only fields
+    (['name', 'type', 'description', 'shortTagline', 'address', 'location', 'basePrice', 'phone', 'email'] as const).forEach(assign);
+    if (input.website !== undefined) data.website = input.website || null;
+    if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl || null;
+    if (input.amenities) data.amenities = JSON.stringify(input.amenities);
+    if (input.images) data.images = JSON.stringify(input.images);
+
     if (user.role === 'ADMIN') {
-      if (body.status) updateData.status = body.status;
-      if (body.certificationBadge) updateData.certificationBadge = body.certificationBadge;
-      if (body.isFeatured !== undefined) updateData.isFeatured = body.isFeatured;
+      (['status', 'certificationBadge', 'isFeatured', 'needsAdminAudit'] as const).forEach(assign);
+      if (input.isVerified !== undefined) {
+        data.isVerified = input.isVerified;
+        if (input.isVerified) {
+          data.verifiedAt = new Date();
+          data.verifiedBy = user.name || user.email;
+        }
+      }
     }
 
-    const updated = await prisma.business.update({
-      where: { id },
-      data: updateData,
-    });
-
+    const updated = await prisma.business.update({ where: { id: params.id }, data });
     return NextResponse.json({ success: true, business: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update business' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'businesses/[id] PATCH');
+  }
+}
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  try {
+    const user = await requireUser();
+    if (user.role !== 'ADMIN') {
+      throw forbidden('Only administrators can remove service entries');
+    }
+
+    const existing = await prisma.business.findUnique({ where: { id: params.id } });
+    if (!existing) throw notFound('Business not found');
+
+    await prisma.business.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true, message: 'Service entry deleted successfully' });
+  } catch (error) {
+    return handleRouteError(error, 'businesses/[id] DELETE');
   }
 }

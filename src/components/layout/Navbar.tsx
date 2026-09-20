@@ -3,478 +3,489 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  Search, 
-  ChevronDown, 
-  Menu, 
-  X, 
-  MapPin,
-  Star,
-  ArrowRight,
-  Building2,
-  UtensilsCrossed,
-  Compass,
-  ShieldCheck,
+import { publicConfig } from '@/lib/publicConfig';
+import {
+  Search,
+  ChevronDown,
+  Menu,
+  X,
   User,
   LogIn,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Building2,
+  UtensilsCrossed,
+  Compass,
+  Award,
+  GraduationCap,
+  HelpCircle,
+  FileText,
+  Check,
+  ShieldCheck
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { RateServiceButton } from '@/components/reviews/RateServiceButton';
-
+import { Text } from '@/components/ui/Text';
 
 interface NavbarProps {
   onOpenConcierge?: () => void;
 }
 
-const megaMenuData: Record<string, { title: string; description: string; links: { name: string; href: string; desc: string }[]; image: string; imageAlt: string }> = {
-  Stays: {
-    title: 'Luxury Stays',
-    description: 'RDB-certified 5-star eco-lodges across Rwanda\'s most breathtaking landscapes.',
-    links: [
-      { name: 'Volcanoes Lodges', href: '/explore?type=HOTEL&location=Musanze', desc: 'Private villas near gorilla territory' },
-      { name: 'Lake Kivu Retreats', href: '/explore?type=HOTEL&location=Rubavu', desc: 'Lakefront serenity & wellness spas' },
-      { name: 'Kigali City Hotels', href: '/explore?type=HOTEL&location=Kigali', desc: 'Urban luxury in the cleanest city' },
-      { name: 'Nyungwe Forest Camps', href: '/explore?type=HOTEL&location=Nyungwe', desc: 'Canopy walks & primate treks' },
-    ],
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80',
-    imageAlt: 'Luxury Rwanda Lodge',
-  },
-  Experiences: {
-    title: 'Safari & Adventures',
-    description: 'Once-in-a-lifetime gorilla treks, helicopter safaris, and curated wildlife tours.',
-    links: [
-      { name: 'Gorilla Trekking', href: '/explore?type=TOUR', desc: 'Face-to-face with mountain gorillas' },
-      { name: 'Akagera Big Five Safari', href: '/explore?type=TOUR&location=Akagera', desc: 'Lions, elephants & rhinos' },
-      { name: 'Helicopter Safaris', href: '/explore?type=TOUR', desc: 'Aerial views of the volcanoes' },
-      { name: 'Cultural Heritage Tours', href: '/explore?type=TOUR', desc: 'Rwanda\'s rich traditions' },
-    ],
-    image: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=600&q=80',
-    imageAlt: 'Gorilla Trekking Rwanda',
-  },
-  Dining: {
-    title: 'Fine Dining',
-    description: 'Award-winning restaurants and world-class Rwandan cuisine.',
-    links: [
-      { name: 'Kigali Restaurants', href: '/explore?type=RESTAURANT&location=Kigali', desc: 'Farm-to-table excellence' },
-      { name: 'Lodge Dining', href: '/explore?type=RESTAURANT', desc: 'Private chef experiences' },
-      { name: 'Coffee & Tea Tastings', href: '/explore?type=RESTAURANT', desc: 'Specialty Rwandan brews' },
-      { name: 'Wine & Sommelier', href: '/explore?type=RESTAURANT', desc: 'Curated cellar selections' },
-    ],
-    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
-    imageAlt: 'Fine Dining Rwanda',
-  },
-};
-
 export function Navbar({ onOpenConcierge }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, switchRole, logout } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const [activeMega, setActiveMega] = useState<string | null>(null);
-  const megaTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isHomePage = pathname === '/';
+  // Dropdown states
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
 
+  // Search Pill Bar State
+  const [searchCategory, setSearchCategory] = useState<string>('ALL');
+  const [searchLocation, setSearchLocation] = useState<string>('ALL');
+  const [searchSort, setSearchSort] = useState<string>('top_rated');
+
+  const browseRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on route change or click outside
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Close mega menu on route change
-  useEffect(() => {
-    setActiveMega(null);
-    setMobileMenuOpen(false);
-    setRoleMenuOpen(false);
+    setBrowseOpen(false);
+    setAccountOpen(false);
+    setHamburgerOpen(false);
   }, [pathname]);
 
-  const handleMegaEnter = (name: string) => {
-    if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current);
-    setActiveMega(name);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (browseRef.current && !browseRef.current.contains(e.target as Node)) {
+        setBrowseOpen(false);
+      }
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+      if (hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node)) {
+        setHamburgerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Smooth scroll handler for landing page sections
+  const handleNavClick = (sectionId: string, fallbackHref?: string) => {
+    if (pathname === '/') {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    router.push(fallbackHref || `/#${sectionId}`);
   };
 
-  const handleMegaLeave = () => {
-    megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 150);
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchCategory !== 'ALL') params.set('type', searchCategory);
+    if (searchLocation !== 'ALL') params.set('location', searchLocation);
+    if (searchSort) params.set('sort', searchSort);
+    router.push(`/explore?${params.toString()}`);
   };
 
-  const navItems = ['Stays', 'Experiences', 'Dining'];
-
-  // Dashboard link depending on user role
-  const getDashboardHref = () => {
-    if (!user) return '/login';
-    if (user.role === 'ADMIN') return '/admin/dashboard';
-    if (user.role === 'PARTNER') return '/partner/dashboard';
-    return '/customer/bookings';
-  };
-
-  const getDashboardLabel = () => {
-    if (!user) return 'Login';
-    if (user.role === 'ADMIN') return 'RDB Admin Portal';
-    if (user.role === 'PARTNER') return 'Partner Dashboard';
-    return 'My Bookings';
-  };
-
-  // Background: fully transparent on homepage at top, sky blue accent on scroll. Dark navy for other pages. Never white.
-  const headerBg = isHomePage
-    ? scrolled
-      ? 'bg-sky-700/95 backdrop-blur-2xl border-b border-white/15 shadow-2xl shadow-sky-900/40'
-      : 'bg-transparent border-b border-transparent'
-    : scrolled
-      ? 'bg-[#0B1B36]/95 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-slate-950/40'
-      : 'bg-[#0B1B36] border-b border-white/10';
+  const isPartner = user?.role === 'SERVICE_OWNER' || (user?.role as any) === 'PARTNER';
 
   return (
-    <>
-      {/* Fixed header overlaying the hero */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${headerBg} ${scrolled ? 'py-3' : 'py-5'}`}
-      >
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex items-center justify-between flex-nowrap">
+    <header className="sticky top-0 left-0 right-0 z-50 bg-[#FAF9F6] border-b border-slate-200/80 shadow-sm transition-all duration-300">
 
-            {/* FAR LEFT: Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0">
+      {/* Primary Header Row — 3-Column Balanced Layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-24">
+
+          {/* 1. LEFT: Enlarged Logo */}
+          <div className="flex-1 flex items-center justify-start shrink-0">
+            <Link href="/" className="flex items-center shrink-0">
               <Image
-                src="/logo/higa_logo_horizontal_white.png"
+                src="/logo/higalux_logo_final.png"
                 alt="Higa Lux"
-                width={168}
-                height={56}
+                width={210}
+                height={68}
                 priority
-                className="h-7 sm:h-8 lg:h-24 w-auto"
+                className="h-10 sm:h-12 lg:h-14 w-auto object-contain transition-all"
               />
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
-              </span>
             </Link>
+          </div>
 
-            {/* CENTER: Minimal nav items with mega menu on hover */}
-            <nav className="hidden lg:flex items-center gap-12 xl:gap-16">
-              {navItems.map((item) => (
-                <div
-                  key={item}
-                  className="relative"
-                  onMouseEnter={() => handleMegaEnter(item)}
-                  onMouseLeave={handleMegaLeave}
-                >
-                  <Link
-                    href={`/explore?type=${item === 'Stays' ? 'HOTEL' : item === 'Dining' ? 'RESTAURANT' : 'TOUR'}`}
-                    className={`text-[13px] uppercase tracking-[0.2em] font-bold transition-all duration-200 py-2 flex items-center gap-1.5 group ${
-                      activeMega === item ? 'text-white' : 'text-white/70 hover:text-white'
-                    }`}
+          {/* 2. CENTER: Primary Nav Items (3 Points Centered with Balanced Spacing) */}
+          <nav className="hidden md:flex items-center justify-center gap-8 lg:gap-12 shrink-0">
+
+            {/* Nav Point 1: Leaderboard Section Link */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('leaderboard', '/explore')}
+              className={`text-sm font-medium transition-colors py-2 ${pathname === '/explore' ? 'text-sky-600' : 'text-slate-800 hover:text-sky-600'
+                }`}
+            >
+              Leaderboard
+            </button>
+
+            {/* Nav Point 2: Browse Dropdown */}
+            <div className="relative" ref={browseRef}>
+              <button
+                type="button"
+                onClick={() => setBrowseOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-sky-600 transition-colors py-2"
+              >
+                <span>Browse</span>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${browseOpen ? 'rotate-180 text-sky-600' : ''}`} />
+              </button>
+
+              {browseOpen && (
+                <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 rounded-2xl bg-white p-2 shadow-xl border border-slate-200/90 z-50 animate-in fade-in duration-150">
+                  <button
+                    type="button"
+                    onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=HOTEL'); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
                   >
-                    <span>{item}</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${activeMega === item ? 'rotate-180 text-sky-400' : 'text-white/40'}`} />
-                  </Link>
+                    <Building2 className="w-4 h-4 text-sky-600" />
+                    <span>Stays</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=TOUR'); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
+                  >
+                    <Compass className="w-4 h-4 text-sky-600" />
+                    <span>Experiences</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setBrowseOpen(false); handleNavClick('destinations', '/explore?type=RESTAURANT'); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-600 text-xs font-medium transition-all text-left"
+                  >
+                    <UtensilsCrossed className="w-4 h-4 text-sky-600" />
+                    <span>Dining</span>
+                  </button>
                 </div>
-              ))}
-
-              {/* Role-based minimal link */}
-              {user && (
-                <Link 
-                  href={getDashboardHref()} 
-                  className="text-[13px] uppercase tracking-[0.2em] font-bold text-sky-400/90 hover:text-sky-300 transition-colors py-2 flex items-center gap-1.5"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>{user.role === 'ADMIN' ? 'Admin' : user.role === 'PARTNER' ? 'Portal' : 'Bookings'}</span>
-                </Link>
               )}
-            </nav>
+            </div>
 
-            {/* FAR RIGHT: Rate Service Button + Login Button + User Switcher */}
-            <div className="hidden lg:flex items-center gap-3 shrink-0">
+            {/* Nav Point 3: Why Higa Lux Section */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('why-higalux')}
+              className="text-sm font-medium text-slate-800 hover:text-sky-600 transition-colors py-2"
+            >
+              Why Higa Lux
+            </button>
 
+          </nav>
+
+          {/* 3. RIGHT: Rate a Service CTA + Static Account Icon + Hamburger Menu */}
+          <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4 shrink-0">
+
+            {/* Restyled "Rate a Service" Link-Style CTA (Transparent, 2px border, ThumbsUp line icon) */}
+            <div className="hidden sm:block">
               <RateServiceButton
-                serviceId="kigali-urban-luxury"
-                serviceName="Rwandan Luxury Hospitality Service"
-                variant="glass"
+                variant="default"
                 buttonText="Rate a Service"
               />
-              
-              {/* Account Dropdown or Login Button */}
-              <div className="relative">
-                {user ? (
-                  <button
-                    onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                    className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] text-xs font-bold text-white/90 transition-all shadow-sm"
+            </div>
+
+            {/* Static Account Icon Button (Positioned consistently regardless of login state) */}
+            <div className="relative" ref={accountRef}>
+              <button
+                type="button"
+                onClick={() => setAccountOpen((v) => !v)}
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 flex items-center justify-center transition-all shadow-sm active:scale-95"
+                title="Account Menu"
+                aria-label="Account Menu"
+              >
+                <User className="w-5 h-5 text-slate-700" />
+              </button>
+
+              {/* Account Dropdown */}
+              {accountOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white p-2.5 shadow-2xl border border-slate-200 z-50 space-y-1 animate-in fade-in duration-150">
+
+                  {user ? (
+                    <>
+                      {/* Logged in User Info */}
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 mb-1">
+                        <div className="text-xs font-bold text-slate-900 truncate">{user.name}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600">{user.role}</div>
+                      </div>
+
+                      {/* Customer / Guest Options */}
+                      {user.role === 'CUSTOMER' && (
+                        <>
+                          <Link
+                            href="/customer/bookings"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                          >
+                            <Building2 className="w-4 h-4 text-sky-600" />
+                            <span>My Bookings</span>
+                          </Link>
+                          <Link
+                            href="/customer/bookings"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                          >
+                            <User className="w-4 h-4 text-slate-500" />
+                            <span>Profile</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {/* Service Owner / Partner Options */}
+                      {isPartner && (
+                        <>
+                          <Link
+                            href="/partner/dashboard"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-sky-600" />
+                            <span>Dashboard</span>
+                          </Link>
+                          <Link
+                            href="/partner/listings"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                          >
+                            <Building2 className="w-4 h-4 text-slate-600" />
+                            <span>Settings & Listings</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {/* Admin Options — ADMIN IS ONLY SURFACED HERE */}
+                      {user.role === 'ADMIN' && (
+                        <>
+                          <Link
+                            href="/admin/dashboard"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-sky-50 text-sky-900 text-xs font-extrabold transition-all"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-sky-600" />
+                            <span>Admin Panel</span>
+                          </Link>
+                          <Link
+                            href="/partner/dashboard"
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-slate-600" />
+                            <span>Partner Dashboard</span>
+                          </Link>
+                        </>
+                      )}
+
+                      <div className="pt-1 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => { logout(); setAccountOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-rose-50 text-rose-600 text-xs font-bold transition-all"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-all justify-center"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Sign In</span>
+                      </Link>
+                      <Link
+                        href="/login?mode=signup"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all justify-center border border-slate-200 mt-1"
+                      >
+                        <span>Sign Up</span>
+                      </Link>
+                    </>
+                  )}
+
+                </div>
+              )}
+            </div>
+
+            {/* Hamburger Menu Icon (Placed after account icon for secondary links) */}
+            <div className="relative" ref={hamburgerRef}>
+              <button
+                type="button"
+                onClick={() => setHamburgerOpen((v) => !v)}
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 flex items-center justify-center transition-all shadow-sm active:scale-95"
+                title="Secondary Menu"
+                aria-label="Secondary Menu"
+              >
+                {hamburgerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+
+              {hamburgerOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white p-2.5 shadow-2xl border border-slate-200 z-50 space-y-1 animate-in fade-in duration-150">
+                  <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                    Secondary Menu
+                  </div>
+
+                  <Link
+                    href="/partner/academy"
+                    onClick={() => setHamburgerOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
                   >
-                    <div className="w-6 h-6 rounded-full bg-sky-500 text-slate-950 flex items-center justify-center text-[10px] font-extrabold shadow-sm">
-                      {user.role === 'ADMIN' ? 'VU' : user.role === 'PARTNER' ? 'JP' : 'CM'}
-                    </div>
-                    <span className="max-w-[120px] truncate">{user.name}</span>
-                    <ChevronDown className="w-3 h-3 text-white/40" />
-                  </button>
-                ) : (
-                  <Link href="/login">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs transition-all shadow-lg shadow-sky-500/20 hover:scale-105 active:scale-95">
-                      <LogIn className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Sign In</span>
-                    </button>
+                    <GraduationCap className="w-4 h-4 text-sky-600" />
+                    <span>Staff Academy</span>
                   </Link>
-                )}
 
-                {/* Account & Profile Menu Dropdown */}
-                {roleMenuOpen && user && (
-                  <div
-                    className="absolute right-0 mt-3 w-80 rounded-3xl bg-[#0B1528] p-3 shadow-2xl border border-white/15 z-[60] space-y-2 animate-in fade-in duration-200"
-                    onMouseLeave={() => setRoleMenuOpen(false)}
+                  <Link
+                    href="/partner/subscriptions"
+                    onClick={() => setHamburgerOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
                   >
-                    {/* Logged User Info */}
-                    <div className="px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/10 space-y-1">
-                      <div className="text-xs font-bold text-white flex items-center justify-between">
-                        <span className="truncate">{user.name}</span>
-                        <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-400/30">
-                          {user.role}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 truncate">{user.email}</div>
-                    </div>
+                    <Award className="w-4 h-4 text-sky-600" />
+                    <span>Membership & Payouts</span>
+                  </Link>
 
-                    {/* Management Dashboard Quick Link */}
-                    <Link
-                      href={getDashboardHref()}
-                      onClick={() => setRoleMenuOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-200 border border-sky-400/30 text-xs font-bold transition-all"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-sky-400" />
-                      <div className="flex-1 text-left">
-                        <div>Go to {getDashboardLabel()}</div>
-                        <div className="text-[10px] text-sky-300/70 font-normal">Manage settings & audits</div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-sky-400" />
-                    </Link>
+                  <a
+                    href="mailto:support@higalux.rw"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                  >
+                    <HelpCircle className="w-4 h-4 text-slate-500" />
+                    <span>Help & Support</span>
+                  </a>
 
-                    {/* Switch Profile Section */}
-                    <div className="pt-2">
-                      <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-slate-500 uppercase">Switch Demo Account</div>
+                  <Link
+                    href="/terms"
+                    onClick={() => setHamburgerOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
+                  >
+                    <FileText className="w-4 h-4 text-slate-500" />
+                    <span>Terms & Privacy</span>
+                  </Link>
+
+                  {/* Demo Account Switcher (if demo mode) */}
+                  {publicConfig.demoMode && user && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        Switch Demo Account
+                      </div>
                       {[
-                        { role: 'CUSTOMER' as const, initials: 'CM', name: 'Clarisse Mutoni', sub: 'Verified Traveler', color: 'sky' },
-                        { role: 'PARTNER' as const, initials: 'JP', name: 'Jean-Paul (The Retreat)', sub: 'Hotel Owner', color: 'emerald' },
-                        { role: 'ADMIN' as const, initials: 'VU', name: 'Dr. Vanessa Uwase', sub: 'RDB Chief Inspector', color: 'amber' },
+                        { role: 'CUSTOMER' as const, name: 'Clarisse (Guest)' },
+                        { role: 'SERVICE_OWNER' as const, name: 'Jean-Paul (Owner)' },
+                        { role: 'ADMIN' as const, name: 'Dr. Vanessa (Admin)' },
                       ].map((r) => (
                         <button
                           key={r.role}
-                          onClick={() => { switchRole(r.role); setRoleMenuOpen(false); }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-left text-xs transition-all ${
-                            user?.role === r.role ? `bg-${r.color}-500/20 text-${r.color}-200 font-bold border border-${r.color}-400/40` : 'text-slate-300 hover:bg-white/5'
-                          }`}
+                          onClick={() => { switchRole(r.role); setHamburgerOpen(false); }}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors ${user.role === r.role ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                            }`}
                         >
-                          <div className={`w-6 h-6 rounded-full bg-${r.color}-500/30 text-${r.color}-300 flex items-center justify-center font-bold text-[10px]`}>{r.initials}</div>
-                          <div className="flex-1 truncate">
-                            <div className="font-bold text-white text-xs leading-tight">{r.name}</div>
-                            <div className="text-[10px] text-slate-400 leading-tight">{r.sub}</div>
-                          </div>
+                          <span>{r.name}</span>
+                          {user.role === r.role && <Check className="w-3.5 h-3.5 text-sky-600" />}
                         </button>
                       ))}
                     </div>
-
-                    {/* Logout Option */}
-                    <div className="pt-2 border-t border-white/10">
-                      <button
-                        onClick={() => { logout(); setRoleMenuOpen(false); }}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/20 transition-all"
-                      >
-                        <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Search Icon */}
-              <Link
-                href="/explore"
-                className="p-2.5 text-white/60 hover:text-white rounded-full hover:bg-white/[0.08] transition-colors"
-                title="Search"
-              >
-                <Search className="w-[18px] h-[18px]" />
-              </Link>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Mobile Hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2.5 text-white/70 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
           </div>
+
         </div>
 
-        {/* MEGA NAV DROPDOWN: Half-page panel with images */}
-        {activeMega && megaMenuData[activeMega] && (
-          <div
-            className="absolute top-full left-0 right-0 bg-[#09152A]/[0.97] backdrop-blur-2xl border-t border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-200"
-            onMouseEnter={() => handleMegaEnter(activeMega)}
-            onMouseLeave={handleMegaLeave}
+        {/* Search Pill Bar (Category, Location, Sort By with consistent Chevron icons) */}
+        <div className="pb-4 pt-1">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="w-full max-w-4xl mx-auto rounded-full bg-white border border-slate-200/90 shadow-md hover:shadow-lg transition-all p-2 flex flex-col md:flex-row items-center justify-between gap-1 text-xs"
           >
-            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-10">
-              <div className="grid grid-cols-12 gap-10">
-
-                {/* Left: Category Info & Links */}
-                <div className="col-span-5 space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-extrabold text-white tracking-tight">
-                      {megaMenuData[activeMega].title}
-                    </h3>
-                    <p className="text-sm text-white/50 font-normal leading-relaxed max-w-md">
-                      {megaMenuData[activeMega].description}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-1">
-                    {megaMenuData[activeMega].links.map((link) => (
-                      <Link
-                        key={link.name}
-                        href={link.href}
-                        className="group flex items-start gap-3 px-4 py-3 rounded-2xl hover:bg-white/[0.06] transition-colors"
-                      >
-                        <ArrowRight className="w-4 h-4 text-sky-400 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div>
-                          <div className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors">
-                            {link.name}
-                          </div>
-                          <div className="text-xs text-white/40 font-normal">
-                            {link.desc}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-
-                  <Link
-                    href="/explore"
-                    className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-sky-400 hover:text-sky-300 transition-colors pt-2"
-                  >
-                    <span>View All {megaMenuData[activeMega].title}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-
-                {/* Right: Featured Image */}
-                <div className="col-span-7 relative h-[320px] rounded-3xl overflow-hidden group">
-                  <Image
-                    src={megaMenuData[activeMega].image}
-                    alt={megaMenuData[activeMega].imageAlt}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#09152A]/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-sky-400" />
-                      <span className="text-xs font-bold text-white/90">RDB Quality Verified</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-sky-400 text-sky-400" />
-                      <span className="text-xs font-bold text-white/90">4.9 Rating</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Spacer to push content below the fixed navbar (taller on lg+ to match the larger desktop logo) */}
-      <div className={`${isHomePage ? '' : (scrolled ? 'h-[60px] lg:h-[120px]' : 'h-[76px] lg:h-[136px]')} transition-all duration-500`} />
-
-      {/* MOBILE: Full-screen dark overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#09152A]/[0.98] backdrop-blur-2xl flex flex-col animate-in fade-in duration-300">
-
-          {/* Top: Logo + Close */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
-              <Image
-                src="/logo/higa_logo_horizontal_white.png"
-                alt="Higa Lux"
-                width={168}
-                height={56}
-                className="h-8 w-auto"
-              />
-              <span className="w-2 h-2 rounded-full bg-sky-500" />
-            </Link>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-3 text-white/50 hover:text-white rounded-full bg-white/[0.08] border border-white/[0.1]"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Center: Full-screen nav links */}
-          <nav className="flex-1 flex flex-col justify-center gap-5 px-8 py-10">
-            {navItems.map((item) => (
-              <Link
-                key={item}
-                href={`/explore?type=${item === 'Stays' ? 'HOTEL' : item === 'Dining' ? 'RESTAURANT' : 'TOUR'}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-3xl uppercase tracking-[0.2em] font-extrabold text-white/80 hover:text-sky-400 transition-colors"
-              >
-                {item}
-              </Link>
-            ))}
-            
-            <Link
-              href={getDashboardHref()}
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-3xl uppercase tracking-[0.2em] font-extrabold text-sky-400/90 hover:text-sky-300 transition-colors flex items-center gap-3"
-            >
-              <LayoutDashboard className="w-7 h-7" />
-              <span>{getDashboardLabel()}</span>
-            </Link>
-          </nav>
-
-          {/* Bottom: CTA & Role Switcher */}
-          <div className="px-6 py-6 border-t border-white/10 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="primary" fullWidth className="font-extrabold">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/explore" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" fullWidth className="bg-white/[0.06] border-white/[0.15] text-white">
-                  Explore
-                </Button>
-              </Link>
-            </div>
-
-            <div className="pt-2">
-              <RateServiceButton
-                serviceId="kigali-urban-luxury"
-                serviceName="Rwandan Luxury Hospitality Service"
-                variant="default"
-                buttonText="Rate a Service"
-                className="w-full justify-center !py-3 font-extrabold shadow-lg shadow-sky-500/25"
-              />
-            </div>
-
-            {user && (
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
-                <span className="truncate">Logged in as {user.name}</span>
-                <button 
-                  onClick={() => { logout(); setMobileMenuOpen(false); }}
-                  className="text-rose-400 font-bold hover:underline"
+            {/* Segment 1: Category (Dropdown with Chevron) */}
+            <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors border-b md:border-b-0 md:border-r border-slate-200/80">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
+                Category
+              </Text>
+              <div className="flex items-center justify-between">
+                <select
+                  value={searchCategory}
+                  onChange={(e) => setSearchCategory(e.target.value)}
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
                 >
-                  Sign Out
-                </button>
+                  <option value="ALL">All Categories</option>
+                  <option value="HOTEL">Stays</option>
+                  <option value="TOUR">Experiences</option>
+                  <option value="RESTAURANT">Dining</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none shrink-0 -ml-3" />
               </div>
-            )}
-          </div>
+            </div>
+
+            {/* Segment 2: Location (Dropdown with Chevron) */}
+            <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors border-b md:border-b-0 md:border-r border-slate-200/80">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
+                Location
+              </Text>
+              <div className="flex items-center justify-between">
+                <select
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
+                >
+                  <option value="ALL">Where in Rwanda?</option>
+                  <option value="Kigali">Kigali City</option>
+                  <option value="Musanze">Musanze / Volcanoes</option>
+                  <option value="Rubavu">Rubavu / Lake Kivu</option>
+                  <option value="Nyungwe">Nyungwe Rainforest</option>
+                  <option value="Akagera">Akagera National Park</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none shrink-0 -ml-3" />
+              </div>
+            </div>
+
+            {/* Segment 3: Sort By (Replaces Dates/Guests; Dropdown with Chevron) */}
+            <div className="w-full md:w-auto flex-1 px-4 py-2 rounded-full hover:bg-slate-50 cursor-pointer transition-colors">
+              <Text variant="caption" color="muted" className="block text-[10px] font-medium uppercase tracking-wider">
+                Sort By
+              </Text>
+              <div className="flex items-center justify-between">
+                <select
+                  value={searchSort}
+                  onChange={(e) => setSearchSort(e.target.value)}
+                  className="w-full bg-transparent text-slate-900 font-medium text-xs focus:outline-none cursor-pointer appearance-none pr-4"
+                >
+                  <option value="top_rated">Top Rated</option>
+                  <option value="most_reviewed">Most Reviewed</option>
+                  <option value="trending">Trending This Week</option>
+                  <option value="newest">Newest</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none shrink-0 -ml-3" />
+              </div>
+            </div>
+
+            {/* Segment 4: Circular Search Button (Accent Blue) */}
+            <button
+              type="submit"
+              className="w-11 h-11 rounded-full bg-sky-600 hover:bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-600/30 transition-transform active:scale-95 self-end md:self-auto mt-2 md:mt-0"
+              title="Search Higa Lux"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5 stroke-[2.5]" />
+            </button>
+          </form>
         </div>
-      )}
-    </>
+
+      </div>
+    </header>
   );
 }

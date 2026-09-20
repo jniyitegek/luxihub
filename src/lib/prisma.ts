@@ -1,22 +1,21 @@
 import { PrismaClient } from '@prisma/client';
+import { isProd } from './env';
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+/**
+ * A single Prisma client per process.
+ *
+ * In development Next.js hot-reloads modules on every edit, so the instance is
+ * cached on `globalThis` to avoid exhausting the database connection pool.
+ */
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-const createPrismaClient = () =>
+export const prisma =
+  globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: isProd ? ['error'] : ['error', 'warn'],
   });
 
-export const prisma = (() => {
-  if (globalForPrisma.prisma && (globalForPrisma.prisma as any).serviceRating) {
-    return globalForPrisma.prisma;
-  }
-  const client = createPrismaClient();
-  if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = client;
-  }
-  return client;
-})();
+if (!isProd) {
+  globalForPrisma.prisma = prisma;
+}
 

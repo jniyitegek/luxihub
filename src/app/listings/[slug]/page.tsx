@@ -15,13 +15,13 @@ import {
   Mail, 
   Globe, 
   Clock, 
-  Sparkles, 
   MessageSquare,
   BedDouble,
   Utensils,
   Camera,
   Share2,
-  Heart
+  Heart,
+  User
 } from 'lucide-react';
 import { BusinessListing, ReviewDto } from '@/lib/types';
 import { CertificationBadge } from '@/components/ui/CertificationBadge';
@@ -123,10 +123,12 @@ export default function ListingDetailPage() {
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-right">
             <div className="flex items-center justify-end gap-1 text-slate-900 font-extrabold text-base">
               <Star className="w-4 h-4 fill-sky-500 text-sky-500" />
-              <span>{business.ratingAvg.toFixed(2)}</span>
+              <span>{business.reviewCount > 0 ? business.ratingAvg.toFixed(2) : '—'}</span>
             </div>
             <div className="text-[10px] text-slate-500 font-medium">
-              {business.reviewCount} Verified Reviews
+              {business.reviewCount > 0
+                ? `${business.reviewCount} Verified Review${business.reviewCount === 1 ? '' : 's'}`
+                : 'No verified reviews yet'}
             </div>
           </div>
 
@@ -317,55 +319,71 @@ export default function ListingDetailPage() {
 
             {business.reviews && business.reviews.length > 0 ? (
               <div className="space-y-4">
-                {business.reviews.map((rev: any) => (
-                  <div key={rev.id} className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-900 flex items-center justify-center font-bold text-xs">
-                          {rev.user?.name ? rev.user.name.charAt(0) : 'G'}
+                {business.reviews.map((rev: any) => {
+                  const authorName = rev.reviewerName || rev.customer?.name || rev.user?.name || 'Verified Traveler';
+                  const avatarUrl = rev.reviewerAvatar || rev.customer?.avatarUrl || rev.user?.avatarUrl;
+                  return (
+                    <div key={rev.id} className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-9 h-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                            {avatarUrl ? (
+                              <Image src={avatarUrl} alt={authorName} fill className="object-cover" />
+                            ) : (
+                              <User className="w-5 h-5 text-slate-500" />
+                            )}
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-slate-900">{authorName}</h5>
+                            <span className="text-[10px] text-slate-400">
+                              {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent rating'}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h5 className="text-xs font-bold text-slate-900">{rev.user?.name || 'Verified Traveler'}</h5>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(rev.createdAt).toLocaleDateString()}
-                          </span>
+
+                        <div className="flex items-center gap-1">
+                          {[...Array(rev.rating || 5)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
+                          ))}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
-                        ))}
-                      </div>
-                    </div>
-
-                    <h4 className="text-xs font-bold text-slate-900">{rev.title}</h4>
-                    <p className="text-xs text-slate-600 font-normal leading-relaxed">
-                      &ldquo;{rev.comment}&rdquo;
-                    </p>
-
-                    {/* Criteria tags */}
-                    <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                      <div>Cleanliness: <strong className="text-slate-900">{rev.cleanlinessRating}/5</strong></div>
-                      <div>Service: <strong className="text-slate-900">{rev.serviceRating}/5</strong></div>
-                      <div>Hospitality: <strong className="text-slate-900">{rev.hospitalityRating}/5</strong></div>
-                      <div>Value: <strong className="text-slate-900">{rev.valueRating}/5</strong></div>
-                    </div>
-
-                    {/* Partner Response */}
-                    {rev.partnerReply && (
-                      <div className="p-3.5 rounded-2xl bg-sky-50/60 border-l-4 border-sky-600 text-xs space-y-1 mt-2">
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-sky-900">
-                          <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
-                          <span>Response from Property Manager:</span>
-                        </div>
-                        <p className="text-[11px] text-slate-700 font-normal leading-relaxed">
-                          {rev.partnerReply}
+                      {rev.title && <h4 className="text-xs font-bold text-slate-900">{rev.title}</h4>}
+                      {rev.comment ? (
+                        <p className="text-xs text-slate-600 font-normal leading-relaxed">
+                          &ldquo;{rev.comment}&rdquo;
                         </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      ) : (
+                        <p className="text-xs text-slate-400 italic font-normal">
+                          Rating score submitted without comment.
+                        </p>
+                      )}
+
+                      {/* Criteria tags */}
+                      {rev.cleanlinessRating && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
+                          <div>Cleanliness: <strong className="text-slate-900">{rev.cleanlinessRating}/5</strong></div>
+                          <div>Service: <strong className="text-slate-900">{rev.serviceRating}/5</strong></div>
+                          <div>Hospitality: <strong className="text-slate-900">{rev.hospitalityRating}/5</strong></div>
+                          <div>Value: <strong className="text-slate-900">{rev.valueRating}/5</strong></div>
+                        </div>
+                      )}
+
+                      {/* Partner Response */}
+                      {rev.partnerReply && (
+                        <div className="p-3.5 rounded-2xl bg-sky-50/60 border-l-4 border-sky-600 text-xs space-y-1 mt-2">
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-sky-900">
+                            <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
+                            <span>Response from Property Manager:</span>
+                          </div>
+                          <p className="text-[11px] text-slate-700 font-normal leading-relaxed">
+                            {rev.partnerReply}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="p-6 rounded-2xl bg-white border border-slate-200 text-center text-xs text-slate-500 shadow-sm">

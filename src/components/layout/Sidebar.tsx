@@ -5,11 +5,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { publicConfig } from '@/lib/publicConfig';
+import { initialsFor } from '@/lib/initials';
 import {
   Building2,
   UtensilsCrossed,
   Compass,
   LayoutDashboard,
+  CalendarCheck,
+  GraduationCap,
+  Award,
   Menu,
   X,
   LogOut,
@@ -22,9 +27,20 @@ const BROWSE_ITEMS = [
   { name: 'Dining', href: '/explore?type=RESTAURANT', icon: UtensilsCrossed },
 ];
 
+const PARTNER_NAV_ITEMS = [
+  { name: 'Dashboard', href: '/partner/dashboard', icon: LayoutDashboard },
+  { name: 'Reservations', href: '/partner/reservations', icon: CalendarCheck },
+  { name: 'Listings & Offerings', href: '/partner/listings', icon: Building2 },
+  { name: 'Staff Academy', href: '/partner/academy', icon: GraduationCap },
+  { name: 'Membership & Payouts', href: '/partner/subscriptions', icon: Award },
+  { name: 'Directory View', href: '/explore', icon: Compass },
+];
+
+// Seeded identities behind the demo role switcher. The switcher is hidden
+// unless demo mode is on, and the API refuses the call in production.
 const DEMO_ACCOUNTS = [
   { role: 'CUSTOMER' as const, initials: 'CM', name: 'Clarisse Mutoni', sub: 'Verified Traveler' },
-  { role: 'PARTNER' as const, initials: 'JP', name: 'Jean-Paul (The Retreat)', sub: 'Hotel Owner' },
+  { role: 'SERVICE_OWNER' as const, initials: 'JP', name: 'Jean-Paul (The Retreat)', sub: 'Hotel Owner' },
   { role: 'ADMIN' as const, initials: 'VU', name: 'Dr. Vanessa Uwase', sub: 'RDB Chief Inspector' },
 ];
 
@@ -33,41 +49,62 @@ export function Sidebar() {
   const { user, switchRole, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState('');
 
   useEffect(() => {
     setMobileOpen(false);
     setProfileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const updateHash = () => setCurrentHash(window.location.hash);
+    updateHash();
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, [pathname]);
+
+  const isPartner = user?.role === 'SERVICE_OWNER' || (user?.role as any) === 'PARTNER';
+
+  const isNavActive = (itemHref: string) => {
+    if (itemHref.includes('#')) {
+      const [path, hash] = itemHref.split('#');
+      return pathname === path && currentHash === `#${hash}`;
+    }
+    if (itemHref === '/partner/dashboard') {
+      return pathname === '/partner/dashboard' && (!currentHash || currentHash === '#');
+    }
+    return pathname === itemHref;
+  };
+
   const getPortalHref = () => {
     if (!user) return '/login';
     if (user.role === 'ADMIN') return '/admin/dashboard';
-    if (user.role === 'PARTNER') return '/partner/dashboard';
+    if (isPartner) return '/partner/dashboard';
     return '/customer/bookings';
   };
 
   const getPortalLabel = () => {
     if (!user) return 'Login';
     if (user.role === 'ADMIN') return 'Admin Portal';
-    if (user.role === 'PARTNER') return 'Partner Portal';
+    if (isPartner) return 'Partner Portal';
     return 'My Bookings';
   };
 
   const isPortalActive = pathname.startsWith('/admin') || pathname.startsWith('/partner') || pathname.startsWith('/customer');
 
-  const initials = user?.role === 'ADMIN' ? 'VU' : user?.role === 'PARTNER' ? 'JP' : 'CM';
+  const initials = initialsFor(user?.name);
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#0B1B36] text-white">
+    <div className="flex flex-col h-full bg-[#0B1B36] text-white relative overflow-hidden">
       {/* Logo */}
-      <div className="flex items-center justify-between px-5 py-6 border-b border-white/10">
+      <div className="flex items-center justify-between px-5 py-5 border-b border-white/10 shrink-0">
         <Link href="/" className="flex items-center">
           <Image
             src="/logo/higa_logo_horizontal_white.png"
             alt="Higa Lux"
             width={160}
             height={54}
-            className="h-8 w-auto"
+            className="h-7 w-auto"
           />
         </Link>
         <button
@@ -81,49 +118,77 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-          Browse
-        </div>
-        {BROWSE_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0 scrollbar-thin">
+        {isPartner ? (
+          <>
+            <div className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-sky-400/90">
+              Service Owner Portal
+            </div>
+            {PARTNER_NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active = isNavActive(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    active ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Browse
+            </div>
+            {BROWSE_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    active ? 'bg-sky-500/15 text-sky-300' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+
+            <div className="px-3 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Account
+            </div>
             <Link
-              key={item.name}
-              href={item.href}
+              href={getPortalHref()}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                active ? 'bg-sky-500/15 text-sky-300' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                isPortalActive ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
               }`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{item.name}</span>
+              <LayoutDashboard className="w-4 h-4 shrink-0" />
+              <span>{getPortalLabel()}</span>
             </Link>
-          );
-        })}
-
-        <div className="px-3 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-          Account
-        </div>
-        <Link
-          href={getPortalHref()}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-            isPortalActive ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4 shrink-0" />
-          <span>{getPortalLabel()}</span>
-        </Link>
+          </>
+        )}
       </nav>
 
       {/* User Profile — pinned at bottom */}
-      <div className="relative px-3 py-4 border-t border-white/10">
+      <div className="relative px-3 py-3 border-t border-white/10 shrink-0 bg-[#0B1B36]">
         {profileMenuOpen && user && (
           <div className="absolute bottom-full left-3 right-3 mb-2 rounded-2xl bg-[#0B1528] border border-white/15 shadow-2xl p-2 space-y-1 z-50">
-            <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-white/40 uppercase">
-              Switch Demo Account
-            </div>
-            {DEMO_ACCOUNTS.map((r) => (
+            {publicConfig.demoMode && (
+              <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-white/40 uppercase">
+                Switch Demo Account
+              </div>
+            )}
+            {publicConfig.demoMode && DEMO_ACCOUNTS.map((r) => (
               <button
                 key={r.role}
                 onClick={() => { switchRole(r.role); setProfileMenuOpen(false); }}
@@ -170,7 +235,7 @@ export function Sidebar() {
         ) : (
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs transition-all"
+            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-400 text-slate-950 font-extrabold text-xs transition-all"
           >
             Sign In
           </Link>
@@ -202,8 +267,8 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:block fixed top-0 left-0 bottom-0 w-[260px] z-40">
+      {/* Desktop fixed sidebar with strict container boundary */}
+      <aside className="hidden lg:block fixed top-0 left-0 h-screen w-[260px] z-40 overflow-hidden bg-[#0B1B36] shadow-xl border-r border-white/10">
         {sidebarContent}
       </aside>
 
@@ -214,7 +279,7 @@ export function Sidebar() {
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative w-[280px] max-w-[80vw] h-full animate-in slide-in-from-left duration-200">
+          <aside className="relative w-[280px] max-w-[80vw] h-full animate-in slide-in-from-left duration-200 overflow-hidden bg-[#0B1B36]">
             {sidebarContent}
           </aside>
         </div>

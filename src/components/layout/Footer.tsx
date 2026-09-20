@@ -1,7 +1,21 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Phone, Mail, MapPin, Send, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { NewsletterForm } from './NewsletterForm';
+import { publicConfig } from '@/lib/publicConfig';
+import { Text } from '@/components/ui/Text';
+
+const SOCIAL_LINKS = [
+  { icon: Facebook, href: publicConfig.social.facebook, label: 'Facebook' },
+  { icon: Twitter, href: publicConfig.social.twitter, label: 'Twitter' },
+  { icon: Instagram, href: publicConfig.social.instagram, label: 'Instagram' },
+  { icon: Linkedin, href: publicConfig.social.linkedin, label: 'LinkedIn' },
+  // Channels without a configured URL are omitted rather than rendered as
+  // dead links to "#".
+].filter((link) => link.href);
 
 export function Footer() {
   return (
@@ -23,35 +37,16 @@ export function Footer() {
                 className="h-8 w-auto mx-auto md:mx-0"
               />
               <div className="space-y-3">
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight tracking-tight">
+                <Text variant="h3" color="white" className="text-2xl sm:text-3xl leading-tight">
                   Subscribe to our newsletter for exclusive Rwandan luxury updates
-                </h3>
-                <p className="text-sm text-sky-100/80 font-normal">
+                </Text>
+                <Text variant="body" className="text-sky-100/80">
                   Get early access to new Gold Standard partners, seasonal rates, and Hospitality Academy openings.
-                </p>
+                </Text>
               </div>
             </div>
 
-            <div className="w-full md:w-auto shrink-0 space-y-2.5">
-              <div className="flex items-center gap-2 bg-white/15 border border-white/20 rounded-full p-1.5 backdrop-blur-sm w-full md:w-96">
-                <Mail className="w-4 h-4 text-white/70 ml-3 shrink-0" />
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder-white/60 outline-none px-1"
-                />
-                <button
-                  type="button"
-                  className="shrink-0 flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white text-sky-700 font-bold text-sm hover:bg-sky-50 transition-colors"
-                >
-                  <span>Subscribe</span>
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="text-[11px] text-sky-100/70 text-center md:text-left">
-                You can unsubscribe at any time. Read our <Link href="#" className="underline hover:text-white transition-colors">privacy policy</Link>.
-              </p>
-            </div>
+            <NewsletterForm />
           </div>
         </div>
 
@@ -84,16 +79,13 @@ export function Footer() {
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2">
-              {[
-                { icon: Facebook, href: '#', label: 'Facebook' },
-                { icon: Twitter, href: '#', label: 'Twitter' },
-                { icon: Instagram, href: '#', label: 'Instagram' },
-                { icon: Linkedin, href: '#', label: 'LinkedIn' },
-              ].map(({ icon: Icon, href, label }) => (
+              {SOCIAL_LINKS.map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
                   href={href}
-                  aria-label={label}
+                  aria-label={`Higa Lux on ${label}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-sky-600 hover:border-sky-600 hover:text-white transition-colors"
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -142,10 +134,10 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Higa Lux Rwanda. All rights reserved.
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <Link href="#" className="hover:text-sky-600 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-sky-600 transition-colors">Terms of Use</Link>
-            <Link href="#" className="hover:text-sky-600 transition-colors">Legal</Link>
-            <Link href="#" className="hover:text-sky-600 transition-colors">Site Map</Link>
+            <Link href="/privacy" className="hover:text-sky-600 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-sky-600 transition-colors">Terms of Use</Link>
+            <Link href="/legal" className="hover:text-sky-600 transition-colors">Legal</Link>
+            <a href="/sitemap.xml" className="hover:text-sky-600 transition-colors">Site Map</a>
           </div>
         </div>
 

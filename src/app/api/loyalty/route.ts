@@ -1,35 +1,20 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { badRequest, handleRouteError, notFound, parseBody, requireUser } from '@/lib/api';
+import { nextTierInfo, tierForPoints } from '@/lib/loyalty';
 
-const TIER_THRESHOLDS: { tier: string; minPoints: number }[] = [
-  { tier: 'AMBASSADOR', minPoints: 2000 },
-  { tier: 'CONNOISSEUR', minPoints: 500 },
-  { tier: 'EXPLORER', minPoints: 0 },
-];
+export const dynamic = 'force-dynamic';
 
-function tierForPoints(points: number): string {
-  return TIER_THRESHOLDS.find((t) => points >= t.minPoints)!.tier;
-}
-
-function nextTierInfo(points: number): { nextTier: string | null; pointsToNextTier: number } {
-  const ordered = [...TIER_THRESHOLDS].sort((a, b) => a.minPoints - b.minPoints);
-  const next = ordered.find((t) => t.minPoints > points);
-  return next ? { nextTier: next.tier, pointsToNextTier: next.minPoints - points } : { nextTier: null, pointsToNextTier: 0 };
-}
-
-// Loyalty Integration: fetch the caller's rewards status
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
+    const user = await requireUser();
 
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { loyaltyPoints: true, loyaltyTier: true },
+    });
+    if (!dbUser) throw notFound('User not found');
 
     const transactions = await prisma.loyaltyTransaction.findMany({
       where: { userId: user.id },
@@ -37,65 +22,59 @@ export async function GET() {
       take: 20,
     });
 
-    const { nextTier, pointsToNextTier } = nextTierInfo(dbUser.loyaltyPoints);
-
     return NextResponse.json({
       success: true,
       points: dbUser.loyaltyPoints,
       tier: dbUser.loyaltyTier,
-      nextTier,
-      pointsToNextTier,
+      ...nextTierInfo(dbUser.loyaltyPoints),
       transactions,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch loyalty status' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'loyalty GET');
   }
 }
 
-// Redeem loyalty points (e.g. for booking discounts)
+const redeemSchema = z.object({
+  points: z.coerce.number().int().positive('Enter how many points to redeem'),
+  description: z.string().trim().max(200).optional(),
+});
+
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
+    const user = await requireUser();
+    const { points, description } = await parseBody(req, redeemSchema);
 
-    const body = await req.json();
-    const { points, description } = body;
-    const redeemPoints = parseInt((points ?? '').toString(), 10);
+    // The balance check and the debit run in one transaction so two concurrent
+    // redemptions cannot both pass against the same balance.
+    const result = await prisma.$transaction(async (tx) => {
+      const dbUser = await tx.user.findUnique({ where: { id: user.id }, select: { loyaltyPoints: true } });
+      if (!dbUser) throw notFound('User not found');
+      if (dbUser.loyaltyPoints < points) throw badRequest('You do not have enough points for this redemption');
 
-    if (!redeemPoints || redeemPoints <= 0) {
-      return NextResponse.json({ error: 'Invalid points amount' }, { status: 400 });
-    }
+      await tx.loyaltyTransaction.create({
+        data: {
+          userId: user.id,
+          points: -points,
+          type: 'REDEEMED',
+          description: description || 'Points redeemed for a booking discount',
+        },
+      });
 
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-    if (!dbUser || dbUser.loyaltyPoints < redeemPoints) {
-      return NextResponse.json({ error: 'Insufficient loyalty points' }, { status: 400 });
-    }
+      const updated = await tx.user.update({
+        where: { id: user.id },
+        data: { loyaltyPoints: { decrement: points } },
+      });
 
-    await prisma.loyaltyTransaction.create({
-      data: {
-        userId: user.id,
-        points: -redeemPoints,
-        type: 'REDEEMED',
-        description: description || 'Points redeemed for a booking discount',
-      },
+      const tier = tierForPoints(updated.loyaltyPoints);
+      if (tier !== updated.loyaltyTier) {
+        await tx.user.update({ where: { id: user.id }, data: { loyaltyTier: tier } });
+      }
+
+      return { points: updated.loyaltyPoints, tier };
     });
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        loyaltyPoints: { decrement: redeemPoints },
-      },
-    });
-
-    const newTier = tierForPoints(updated.loyaltyPoints);
-    if (newTier !== updated.loyaltyTier) {
-      await prisma.user.update({ where: { id: user.id }, data: { loyaltyTier: newTier } });
-    }
-
-    return NextResponse.json({ success: true, points: updated.loyaltyPoints, tier: newTier });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to redeem points' }, { status: 500 });
+    return NextResponse.json({ success: true, ...result });
+  } catch (error) {
+    return handleRouteError(error, 'loyalty POST');
   }
 }

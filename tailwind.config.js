@@ -60,9 +60,10 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ["'Google Sans Flex Variable'", "'Google Sans'", "'Google Sans Text'", "system-ui", "-apple-system", "sans-serif"],
-        heading: ["'Google Sans Flex Variable'", "'Google Sans'", "'Google Sans Text'", "system-ui", "sans-serif"],
-        serif: ["Playfair Display", "Georgia", "serif"],
+        sans: ["var(--font-poppins)", "'Poppins'", "system-ui", "-apple-system", "sans-serif"],
+        heading: ["var(--font-poppins)", "'Poppins'", "system-ui", "sans-serif"],
+        serif: ["var(--font-poppins)", "'Poppins'", "sans-serif"],
+        poppins: ["var(--font-poppins)", "'Poppins'", "sans-serif"],
       },
       boxShadow: {
         'lux-glow': '0 0 25px -5px var(--brand-sky-glow)',

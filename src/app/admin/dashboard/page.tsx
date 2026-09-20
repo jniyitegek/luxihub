@@ -10,11 +10,15 @@ import {
   TrendingUp, 
   CheckCircle2, 
   Star, 
-  Sparkles, 
   Sliders, 
   Clock, 
   FileText,
-  Loader2
+  Loader2,
+  ShieldCheck,
+  Check,
+  X,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { BusinessListing } from '@/lib/types';
@@ -31,6 +35,7 @@ export default function AdminDashboardPage() {
   const [businesses, setBusinesses] = useState<BusinessListing[]>([]);
   const [openTicketCount, setOpenTicketCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [filterTab, setFilterTab] = useState<'ALL' | 'AUDIT_QUEUE' | 'UNVERIFIED'>('ALL');
 
   // Audit modal state
   const [auditTarget, setAuditTarget] = useState<BusinessListing | null>(null);
@@ -53,6 +58,45 @@ export default function AdminDashboardPage() {
       console.error('Failed to load businesses for admin:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleVerification = async (business: BusinessListing) => {
+    try {
+      const nextVerified = !business.isVerified;
+      const res = await fetch(`/api/businesses/${business.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVerified: nextVerified, needsAdminAudit: false }),
+      });
+      if (res.ok) fetchBusinesses();
+    } catch (e) {
+      console.error('Failed to toggle verification:', e);
+    }
+  };
+
+  const handleDismissAudit = async (businessId: string) => {
+    try {
+      const res = await fetch(`/api/businesses/${businessId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ needsAdminAudit: false }),
+      });
+      if (res.ok) fetchBusinesses();
+    } catch (e) {
+      console.error('Failed to dismiss audit flag:', e);
+    }
+  };
+
+  const handleDeleteBusiness = async (businessId: string) => {
+    if (!confirm('Are you sure you want to delete this service entry?')) return;
+    try {
+      const res = await fetch(`/api/businesses/${businessId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchBusinesses();
+    } catch (e) {
+      console.error('Failed to delete service entry:', e);
     }
   };
 
@@ -184,13 +228,45 @@ export default function AdminDashboardPage() {
 
         {/* Property Audit Queue & Management Table */}
         <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <Text as="h2" variant="h2" color="dark" className="text-2xl">
-              Hospitality Quality Assurance Queue
-            </Text>
-            <span className="text-xs text-slate-500 font-bold">
-              Click &quot;Conduct 40-Pt Audit&quot; to execute in-person audit scoring
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Text as="h2" variant="h2" color="dark" className="text-2xl">
+                Hospitality Quality & Verification Governance
+              </Text>
+              <p className="text-xs text-slate-500 font-medium">
+                Manage service verification lifecycles, corporate domain review flags, and public rating submissions.
+              </p>
+            </div>
+            
+            <div className="inline-flex p-1 rounded-2xl bg-slate-100 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFilterTab('ALL')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  filterTab === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Services ({businesses.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('AUDIT_QUEUE')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  filterTab === 'AUDIT_QUEUE' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Needs Audit ({businesses.filter((b) => b.needsAdminAudit).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('UNVERIFIED')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  filterTab === 'UNVERIFIED' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Unverified Ratings ({businesses.filter((b) => b.verificationSource === 'PUBLIC_REVIEW' || !b.isVerified).length})
+              </button>
+            </div>
           </div>
 
           <div className="rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-xl">
@@ -198,8 +274,8 @@ export default function AdminDashboardPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4">Property / Business</th>
-                    <th className="px-6 py-4">Location</th>
+                    <th className="px-6 py-4">Property / Service</th>
+                    <th className="px-6 py-4">Verification State</th>
                     <th className="px-6 py-4">Current Badge</th>
                     <th className="px-6 py-4">Audit Score</th>
                     <th className="px-6 py-4">Guest Rating</th>
@@ -207,39 +283,104 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {businesses.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-900">
-                        <div className="text-sm font-extrabold">{b.name}</div>
-                        <div className="text-[11px] text-slate-500 font-normal">{b.type}</div>
-                      </td>
-                      <td className="px-6 py-4 font-medium">{b.location}, Rwanda</td>
-                      <td className="px-6 py-4">
-                        <CertificationBadge badge={b.certificationBadge} size="sm" />
-                      </td>
-                      <td className="px-6 py-4 font-mono font-extrabold text-sky-700">
-                        {b.qualityScore != null ? `${b.qualityScore}%` : 'Pending'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-slate-900 font-bold">{b.ratingAvg.toFixed(2)}</span>
-                        <span className="text-slate-400 text-[10px] ml-1 font-medium">({b.reviewCount})</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            setAuditTarget(b);
-                            setAuditSuccess('');
-                          }}
-                          variant="secondary"
-                          size="sm"
-                          className="!rounded-xl hover:!bg-sky-600 hover:!text-white"
-                        >
-                          Conduct 40-Pt Audit
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {businesses
+                    .filter((b) => {
+                      if (filterTab === 'AUDIT_QUEUE') return b.needsAdminAudit === true;
+                      if (filterTab === 'UNVERIFIED') return b.verificationSource === 'PUBLIC_REVIEW' || !b.isVerified;
+                      return true;
+                    })
+                    .map((b) => (
+                      <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-6 py-4 font-bold text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold">{b.name}</span>
+                            {b.needsAdminAudit && (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                                Review Flag
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-normal">
+                            {b.type} • {b.location}, Rwanda
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-medium">
+                          {b.isVerified ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              Unverified ({b.verificationSource === 'PUBLIC_REVIEW' ? 'Public Review' : 'Pending'})
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <CertificationBadge badge={b.certificationBadge} size="sm" />
+                        </td>
+                        <td className="px-6 py-4 font-mono font-extrabold text-sky-700">
+                          {b.qualityScore != null ? `${b.qualityScore}%` : 'Pending'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-slate-900 font-bold">{b.ratingAvg.toFixed(2)}</span>
+                          <span className="text-slate-400 text-[10px] ml-1 font-medium">({b.reviewCount})</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {b.needsAdminAudit && (
+                              <Button
+                                type="button"
+                                onClick={() => handleDismissAudit(b.id)}
+                                variant="ghost"
+                                size="sm"
+                                className="!px-2.5 !py-1 text-[11px] text-amber-700 hover:bg-amber-100"
+                                title="Dismiss Admin Audit Flag"
+                              >
+                                Clear Flag
+                              </Button>
+                            )}
+
+                            <Button
+                              type="button"
+                              onClick={() => handleToggleVerification(b)}
+                              variant={b.isVerified ? 'ghost' : 'secondary'}
+                              size="sm"
+                              className={`!px-2.5 !py-1 text-[11px] !rounded-xl ${
+                                b.isVerified ? 'text-slate-600 hover:text-slate-900' : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
+                              }`}
+                            >
+                              {b.isVerified ? 'Unverify' : 'Verify'}
+                            </Button>
+
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setAuditTarget(b);
+                                setAuditSuccess('');
+                              }}
+                              variant="secondary"
+                              size="sm"
+                              className="!px-2.5 !py-1 text-[11px] !rounded-xl hover:!bg-sky-600 hover:!text-white"
+                            >
+                              Audit
+                            </Button>
+
+                            <Button
+                              type="button"
+                              onClick={() => handleDeleteBusiness(b.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="!px-2 !py-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                              title="Delete service entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, Users, ShieldCheck, Sparkles, Check, ArrowRight, Loader2, Lock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Users, ShieldCheck, Check, ArrowRight, Loader2, Lock } from 'lucide-react';
 import { BusinessListing, ServiceOfferingDto, BookingDto } from '@/lib/types';
 import { formatRwf, formatUsd } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -15,14 +16,23 @@ interface BookingWidgetProps {
   onOfferingSelect?: (id: string) => void;
 }
 
+/** Local YYYY-MM-DD, `offset` days from today. */
+function isoDaysFromNow(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }: BookingWidgetProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const offerings = business.offerings || [];
   const defaultOffering = offerings.find((o) => o.id === selectedOfferingId) || offerings[0];
 
   const [activeOffering, setActiveOffering] = useState<ServiceOfferingDto | undefined>(defaultOffering);
-  const [checkIn, setCheckIn] = useState('2026-08-15');
-  const [checkOut, setCheckOut] = useState('2026-08-18');
+  const today = isoDaysFromNow(0);
+  const [checkIn, setCheckIn] = useState(() => isoDaysFromNow(1));
+  const [checkOut, setCheckOut] = useState(() => isoDaysFromNow(4));
   const [guests, setGuests] = useState(2);
   const [depositOnly, setDepositOnly] = useState(false);
   const [specialRequests, setSpecialRequests] = useState('');
@@ -57,6 +67,14 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
 
   const handleInitiateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guest details come from the signed-in account. There is no placeholder
+    // identity to fall back on — an anonymous visitor signs in first.
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
     setBookingLoading(true);
 
     try {
@@ -64,16 +82,15 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessId: business.id,
           serviceOfferingId: activeOffering?.id || business.offerings?.[0]?.id,
           checkInDate: checkIn,
           checkOutDate: checkOut,
           guests,
           depositOnly,
           specialRequests,
-          guestName: user?.name || 'Clarisse Mutoni',
-          guestEmail: user?.email || 'customer@higalux.rw',
-          guestPhone: user?.phone || '+250 788 123 456',
+          guestName: user.name,
+          guestEmail: user.email,
+          guestPhone: user.phone,
         }),
       });
 
@@ -157,7 +174,16 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               <Input
                 type="date"
                 value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
+                min={today}
+                onChange={(e) => {
+                  setCheckIn(e.target.value);
+                  // Keep the range coherent when check-in moves past check-out.
+                  if (e.target.value >= checkOut) {
+                    const next = new Date(`${e.target.value}T00:00:00`);
+                    next.setDate(next.getDate() + 1);
+                    setCheckOut(next.toISOString().slice(0, 10));
+                  }
+                }}
                 required
                 className="cursor-pointer"
               />
@@ -170,6 +196,7 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               <Input
                 type="date"
                 value={checkOut}
+                min={checkIn}
                 onChange={(e) => setCheckOut(e.target.value)}
                 required
                 className="cursor-pointer"
@@ -252,7 +279,6 @@ export function BookingWidget({ business, selectedOfferingId, onOfferingSelect }
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 text-white" />
                 <span>Reserve & Pay via MoMo / Card</span>
                 <ArrowRight className="w-4 h-4 text-white" />
               </>

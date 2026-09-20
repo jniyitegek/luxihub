@@ -1,233 +1,248 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { badRequest, clientIp, handleRouteError, jsonError, parseBody, parseQuery } from '@/lib/api';
+import { env } from '@/lib/env';
+import { consume } from '@/lib/rateLimit';
 
-function getDb(): any {
-  const p = prisma as any;
-  if (p && p.serviceRating) {
-    return p;
-  }
-  return new PrismaClient() as any;
+import { generateRef } from '@/lib/utils';
+
+/**
+ * Public, unauthenticated service ratings.
+ *
+ * Because anyone can post here, submissions are defended by a honeypot field,
+ * per-IP rate limits, and a per-service cool-down. The visitor's IP is never
+ * stored in the clear — only a salted SHA-256 digest, which is enough to group
+ * repeat submissions without retaining personal data.
+ */
+
+export const dynamic = 'force-dynamic';
+
+const createSchema = z.object({
+  serviceId: z.string().trim().max(200).optional().nullable(),
+  serviceName: z.string().trim().min(2, 'Service name is required').max(200),
+  serviceType: z.enum(['STAYS', 'EXPERIENCES', 'DINING', 'OTHER', 'HOTEL', 'RESTAURANT', 'TOUR']).default('OTHER'),
+  isUnregistered: z.boolean().optional(),
+  rating: z.coerce.number().int().min(1, 'Rating must be between 1 and 5').max(5, 'Rating must be between 1 and 5'),
+  comment: z.string().trim().max(2000).optional(),
+  reviewerName: z.string().trim().max(80).optional(),
+  hp_field: z.string().max(200).optional(),
+});
+
+function hashIp(ip: string): string {
+  return crypto.createHash('sha256').update(`${ip}|${env.RATING_IP_SALT}`).digest('hex');
 }
 
+function normalizeServiceType(type: string): string {
+  const upper = type.toUpperCase();
+  if (upper === 'HOTEL' || upper === 'STAYS') return 'STAYS';
+  if (upper === 'RESTAURANT' || upper === 'DINING') return 'DINING';
+  if (upper === 'TOUR' || upper === 'EXPERIENCES') return 'EXPERIENCES';
+  return 'OTHER';
+}
 
+function mapServiceTypeToDbType(serviceType: string): string {
+  const norm = normalizeServiceType(serviceType);
+  if (norm === 'STAYS') return 'HOTEL';
+  if (norm === 'DINING') return 'RESTAURANT';
+  if (norm === 'EXPERIENCES') return 'TOUR';
+  return 'HOTEL';
+}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const {
-      serviceId,
-      serviceName,
-      rating,
-      comment,
-      reviewerName,
-      hp_field, // Honeypot field
-    } = body;
+    const input = await parseBody(req, createSchema);
 
-    // 1. Honeypot check (anti-spam)
-    if (hp_field && hp_field.trim() !== '') {
-      return NextResponse.json(
-        { error: 'Spam submission detected.' },
-        { status: 400 }
-      );
+    // Honeypot: a real browser leaves this hidden field empty.
+    if (input.hp_field && input.hp_field.trim() !== '') {
+      throw badRequest('Spam submission detected');
     }
 
-    // 2. Data validation
-    if (!serviceId || typeof serviceId !== 'string') {
-      return NextResponse.json(
-        { error: 'Service ID is required.' },
-        { status: 400 }
-      );
+    const ipHash = hashIp(clientIp(req));
+    const rateLimitKey = input.serviceId ? input.serviceId : input.serviceName.toLowerCase();
+
+    if (!consume(`rating:ip:${ipHash}`, 5, 10 * 60).allowed) {
+      return jsonError('You have submitted too many ratings recently. Please try again later.', 429);
+    }
+    if (!consume(`rating:service:${ipHash}:${rateLimitKey}`, 1, 3 * 60).allowed) {
+      return jsonError('You have already rated this service. Please wait a few minutes before rating again.', 429);
     }
 
-    const ratingNum = parseInt(rating, 10);
-    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be an integer between 1 and 5 stars.' },
-        { status: 400 }
-      );
-    }
+    const normalizedCategory = normalizeServiceType(input.serviceType);
 
-    // 3. Extract and hash client IP address
-    const forwarded = req.headers.get('x-forwarded-for');
-    const realIp = req.headers.get('x-real-ip');
-    const rawIp = (forwarded ? forwarded.split(',')[0] : realIp) || '127.0.0.1';
-    const ipHash = crypto
-      .createHash('sha256')
-      .update(`${rawIp.trim()}_HIGA_PUBLIC_RATING_SALT_2026`)
-      .digest('hex');
+    // Check if rating references an existing registered listing
+    let business = input.serviceId
+      ? await prisma.business.findFirst({
+          where: { OR: [{ id: input.serviceId }, { slug: input.serviceId }] },
+        })
+      : null;
 
-    // 4. Rate-Limiting Anti-Spam checks
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    let serviceName = input.serviceName.trim();
+    let serviceType = normalizedCategory;
+    let isUnregistered = false;
 
-    const db = getDb();
-
-    // Rate limit rule A: Max 5 total ratings per IP in 10 minutes
-    const recentRatingsFromIpCount = await db.serviceRating.count({
-      where: {
-        ipHash,
-        createdAt: { gte: tenMinutesAgo },
-      },
-    });
-
-    if (recentRatingsFromIpCount >= 5) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. You have submitted too many ratings recently. Please try again later.' },
-        { status: 429 }
-      );
-    }
-
-    // Rate limit rule B: Duplicate rating for same service from same IP within 3 minutes
-    const duplicateRating = await db.serviceRating.findFirst({
-      where: {
-        serviceId,
-        ipHash,
-        createdAt: { gte: threeMinutesAgo },
-      },
-    });
-
-    if (duplicateRating) {
-      return NextResponse.json(
-        { error: 'You have recently submitted a rating for this service. Please wait a few minutes before rating again.' },
-        { status: 429 }
-      );
-    }
-
-    // 5. Determine display service name if not explicitly passed
-    let finalServiceName = serviceName || 'Verified Luxury Service';
-    let targetBusiness = await prisma.business.findFirst({
-      where: {
-        OR: [{ id: serviceId }, { slug: serviceId }],
-      },
-    });
-
-    if (targetBusiness) {
-      finalServiceName = targetBusiness.name;
+    if (business) {
+      serviceName = business.name;
+      serviceType = normalizeServiceType(business.type);
+      isUnregistered = false;
     } else {
-      // Check if it's a ServiceOffering ID
-      const offering = await prisma.serviceOffering.findUnique({
-        where: { id: serviceId },
-        include: { business: true },
-      });
-      if (offering) {
-        finalServiceName = `${offering.title} (${offering.business.name})`;
-        targetBusiness = offering.business;
+      // Check offering if serviceId matched an offering
+      if (input.serviceId) {
+        const offering = await prisma.serviceOffering.findUnique({
+          where: { id: input.serviceId },
+          include: { business: true },
+        });
+        if (offering) {
+          serviceName = `${offering.title} (${offering.business.name})`;
+          business = offering.business;
+          serviceType = normalizeServiceType(business.type);
+          isUnregistered = false;
+        }
       }
     }
 
-    const cleanReviewerName = reviewerName && reviewerName.trim() !== ''
-      ? reviewerName.trim()
-      : 'Anonymous';
+    // Unregistered service: create or retrieve unverified placeholder business
+    if (!business) {
+      isUnregistered = true;
+      const slugBase = serviceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'service';
+      const placeholderSlug = `unregistered-${slugBase}`;
 
-    const cleanComment = comment && comment.trim() !== ''
-      ? comment.trim()
-      : null;
+      business = await prisma.business.findFirst({
+        where: {
+          OR: [
+            { slug: placeholderSlug },
+            { name: { contains: serviceName, mode: 'insensitive' }, verificationSource: 'PUBLIC_REVIEW' },
+          ],
+        },
+      });
 
-    // 6. Create ServiceRating record
-    const newRating = await db.serviceRating.create({
+      if (!business) {
+        const uniqueSlug = `${placeholderSlug}-${generateRef('PUB').toLowerCase()}`;
+        business = await prisma.business.create({
+          data: {
+            name: serviceName,
+            slug: uniqueSlug,
+            type: mapServiceTypeToDbType(serviceType),
+            location: 'Kigali',
+            address: 'Submitted via public guest rating',
+            description: 'Unregistered service listing created from public customer rating.',
+            status: 'VERIFIED',
+            certificationBadge: 'NONE',
+            ratingAvg: input.rating,
+            reviewCount: 1,
+            verificationSource: 'PUBLIC_REVIEW',
+            needsAdminAudit: false,
+          },
+        });
+      }
+    }
+
+    const rating = await prisma.serviceRating.create({
       data: {
-        serviceId,
-        serviceName: finalServiceName,
-        rating: ratingNum,
-        comment: cleanComment,
-        reviewerName: cleanReviewerName,
+        serviceId: business ? business.id : input.serviceId || 'unregistered',
+        serviceName,
+        serviceType,
+        isUnregistered,
+        rating: input.rating,
+        comment: input.comment || null,
+        reviewerName: input.reviewerName || 'Anonymous',
         ipHash,
       },
     });
 
-    // 7. Update business rating statistics if tied to a Business
-    if (targetBusiness) {
-      const allPublicRatings: Array<{ rating: number }> = await db.serviceRating.findMany({
-        where: {
-          OR: [
-            { serviceId: targetBusiness.id },
-            { serviceId: targetBusiness.slug },
-          ],
-        },
-        select: { rating: true },
-      });
-
-      const totalPublicRatings = allPublicRatings.length;
-      const sumPublicRatings = allPublicRatings.reduce((acc: number, curr: { rating: number }) => acc + curr.rating, 0);
-
-      // Also combine with verified booking reviews if any exist
-      const verifiedReviews = await prisma.review.findMany({
-        where: { businessId: targetBusiness.id },
-        select: { rating: true },
-      });
-
-      const totalVerified = verifiedReviews.length;
-      const sumVerified = verifiedReviews.reduce((acc: number, curr: { rating: number }) => acc + curr.rating, 0);
-
-      const grandTotalCount = totalPublicRatings + totalVerified;
-      const grandSum = sumPublicRatings + sumVerified;
-      const newRatingAvg = grandTotalCount > 0 ? Number((grandSum / grandTotalCount).toFixed(2)) : 5.0;
-
-      await prisma.business.update({
-        where: { id: targetBusiness.id },
-        data: {
-          ratingAvg: newRatingAvg,
-          reviewCount: grandTotalCount,
-        },
-      });
+    if (business) {
+      await recalculateBusinessRating(business.id, business.slug);
     }
 
-    return NextResponse.json({
-      success: true,
-      rating: {
-        id: newRating.id,
-        serviceId: newRating.serviceId,
-        serviceName: newRating.serviceName,
-        rating: newRating.rating,
-        comment: newRating.comment,
-        reviewerName: newRating.reviewerName,
-        createdAt: newRating.createdAt.toISOString(),
-      },
-    });
-  } catch (error: any) {
-    console.error('Error submitting public service rating:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error processing rating submission.' },
-      { status: 500 }
+      {
+        success: true,
+        rating: {
+          id: rating.id,
+          serviceId: rating.serviceId,
+          serviceName: rating.serviceName,
+          serviceType: rating.serviceType,
+          isUnregistered: rating.isUnregistered,
+          rating: rating.rating,
+          comment: rating.comment,
+          reviewerName: rating.reviewerName,
+          createdAt: rating.createdAt.toISOString(),
+        },
+      },
+      { status: 201 }
     );
+  } catch (error) {
+    return handleRouteError(error, 'ratings POST');
   }
 }
 
+/** Blends verified booking reviews with public ratings into one headline score. */
+async function recalculateBusinessRating(businessId: string, slug: string) {
+  const [publicStats, verifiedStats] = await Promise.all([
+    prisma.serviceRating.aggregate({
+      where: { serviceId: { in: [businessId, slug] } },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    prisma.review.aggregate({
+      where: { businessId },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const publicCount = publicStats._count._all;
+  const verifiedCount = verifiedStats._count._all;
+  const total = publicCount + verifiedCount;
+  if (total === 0) return;
+
+  const sum = (publicStats._avg.rating ?? 0) * publicCount + (verifiedStats._avg.rating ?? 0) * verifiedCount;
+
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { ratingAvg: Number((sum / total).toFixed(2)), reviewCount: total },
+  });
+}
+
+const querySchema = z.object({
+  serviceId: z.string().trim().max(200).optional(),
+  serviceType: z.string().trim().optional(),
+  unregisteredOnly: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const serviceId = searchParams.get('serviceId');
-    const db = getDb();
+    const { serviceId, serviceType, unregisteredOnly, limit } = parseQuery(req, querySchema);
 
-    const whereClause: any = {};
-    if (serviceId) {
-      whereClause.serviceId = serviceId;
-    }
+    const where: any = {};
+    if (serviceId) where.serviceId = serviceId;
+    if (serviceType) where.serviceType = serviceType;
+    if (unregisteredOnly === 'true') where.isUnregistered = true;
 
-    const ratings = await db.serviceRating.findMany({
-      where: whereClause,
+    const ratings = await prisma.serviceRating.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: limit,
+      select: {
+        id: true,
+        serviceId: true,
+        serviceName: true,
+        serviceType: true,
+        isUnregistered: true,
+        rating: true,
+        comment: true,
+        reviewerName: true,
+        createdAt: true,
+      },
     });
 
-    const formatted = ratings.map((r: any) => ({
-      id: r.id,
-      serviceId: r.serviceId,
-      serviceName: r.serviceName,
-      rating: r.rating,
-      comment: r.comment,
-      reviewerName: r.reviewerName,
-      createdAt: r.createdAt.toISOString(),
-    }));
-
-
-    return NextResponse.json({ success: true, ratings: formatted });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch public ratings' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      ratings: ratings.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    });
+  } catch (error) {
+    return handleRouteError(error, 'ratings GET');
   }
 }

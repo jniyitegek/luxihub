@@ -1,95 +1,133 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Star, CheckCircle2, MessageSquare, Quote } from 'lucide-react';
+import { Star, CheckCircle2, MessageSquare, Quote, User } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { initialsFor } from '@/lib/initials';
+import { Text } from '@/components/ui/Text';
 
 const ROW_HEIGHT = 108;
 const AVATAR_SIZE = 64;
 const BULGE = 44;
 const AUTOPLAY_MS = 5000;
 
+interface Testimonial {
+  id: string;
+  author: string;
+  avatar: string | null;
+  venue: string;
+  venueSlug: string;
+  rating: number;
+  cleanliness: number;
+  service: number;
+  hospitality: number;
+  title: string;
+  comment: string;
+  partnerReply: string | null;
+  createdAt: string;
+}
+
+function formatMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function getSlot(index: number, active: number, n: number) {
+  if (n === 0) return 0;
+  let diff = (index - active) % n;
+  if (diff > n / 2) diff -= n;
+  if (diff <= -n / 2) diff += n;
+  return diff + 1;
+}
+
 export function TestimonialsSection() {
-  const reviews = [
-    {
-      author: 'Clarisse Mutoni',
-      origin: 'Kigali, Rwanda',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      venue: 'The Retreat by Heaven (Kigali)',
-      rating: 5,
-      cleanliness: 5,
-      service: 5,
-      hospitality: 5,
-      date: 'July 2026',
-      title: 'An unforgettable oasis of peace and Rwandan luxury!',
-      comment:
-        'From the warm greeting with Amaraba tea to the exquisite farm-to-table breakfast by the saltwater pool, our stay at The Retreat was flawless. The staff anticipated every need and the attention to detail is truly world-class.',
-      partnerReply:
-        'Murakoze cyane Clarisse! It was an absolute delight hosting you, and our team cannot wait to welcome you back to your Kigali home.',
-      replyAuthor: 'Jean-Paul N. (General Manager)',
-    },
-    {
-      author: 'Sarah Jenkins',
-      origin: 'San Francisco, USA',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-      venue: 'Bisate Lodge by Wilderness (Musanze)',
-      rating: 5,
-      cleanliness: 5,
-      service: 5,
-      hospitality: 5,
-      date: 'June 2026',
-      title: 'Priceless gorilla trekking experience and royal hospitality',
-      comment:
-        'The spherical villas with views of Mount Bisoke take your breath away. The lodge team organized our gorilla trek effortlessly and had warm fireplace cocktails ready upon our return. 100% deserves the Gold Standard badge.',
-      partnerReply:
-        'Thank you Sarah! Protecting the volcanic mountain gorillas while delivering unmatched Rwandan warmth is our life passion.',
-      replyAuthor: 'Alphonse B. (Lodge Director)',
-    },
-    {
-      author: 'David Van Der Bilt',
-      origin: 'Brussels, Belgium',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-      venue: 'Meza Malonga Fine Dining (Kigali)',
-      rating: 5,
-      cleanliness: 5,
-      service: 5,
-      hospitality: 5,
-      date: 'July 2026',
-      title: 'A 10-course culinary masterwork of African terroir',
-      comment:
-        'Chef Dieuveil Malonga has created something peerless. The indigenous grain pairings and Rwandan artisanal spirit flights were on par with 3-star Michelin establishments in Europe.',
-      partnerReply:
-        'Merci David! Celebrating African gastronomy at the highest echelon is our collective mission.',
-      replyAuthor: 'Meza Malonga Hospitality Team',
-    },
-  ];
+  const [reviews, setReviews] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Testimonials come from verified reviews attached to completed bookings,
+  // which is what makes the "only guests who stayed" claim below true.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/testimonials')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setReviews(data.testimonials ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setReviews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [active, setActive] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const restartAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (reviews.length < 2) return;
     timerRef.current = setInterval(() => {
       setActive((prev) => (prev + 1) % reviews.length);
     }, AUTOPLAY_MS);
   };
 
   useEffect(() => {
+    setActive(0);
     restartAutoplay();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reviews.length]);
 
   const handleSelect = (index: number) => {
     setActive(index);
     restartAutoplay();
   };
 
+  if (loading || reviews.length === 0) {
+    return (
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
+        <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+          <Text variant="h2" color="dark" className="text-3xl sm:text-4xl">
+            Verified Reviews from <span className="text-sky-600">Real Travelers</span>
+          </Text>
+          <Text variant="body" color="muted">
+            Only guests who booked and completed their stay through Higa Lux can submit ratings.
+          </Text>
+        </div>
+
+        {loading ? (
+          <div className="h-[380px] rounded-[32px] bg-slate-100 animate-pulse" aria-busy="true" />
+        ) : (
+          <div className="rounded-[32px] border border-slate-200 bg-white p-14 text-center space-y-3">
+            <Quote className="w-10 h-10 mx-auto text-sky-100" fill="currentColor" strokeWidth={1.5} />
+            <p className="text-sm font-bold text-slate-900">No verified reviews published yet</p>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              Reviews appear here once guests complete their stays. We never publish a testimonial that is not tied to a
+              completed booking.
+            </p>
+            <Link href="/explore" className="inline-block pt-2 text-xs font-extrabold text-sky-600 hover:underline">
+              Browse certified properties →
+            </Link>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   const current = reviews[active];
   const n = reviews.length;
-  const railHeight = ROW_HEIGHT * n;
+
+  // We maintain a fixed 3-avatar height arc rail
+  const VISIBLE_SLOTS = 3;
+  const railHeight = ROW_HEIGHT * VISIBLE_SLOTS;
   const topY = ROW_HEIGHT / 2;
   const bottomY = railHeight - ROW_HEIGHT / 2;
   const midY = railHeight / 2;
@@ -101,8 +139,7 @@ export function TestimonialsSection() {
   const railWidth = restX + 12;
 
   // Solve for the single circle passing through the top, center, and bottom
-  // avatar centers, so the arc is a true constant-curvature curve (no
-  // reversal) and every avatar sits exactly on it.
+  // avatar centers, so the arc is a true constant-curvature curve
   const h = midY - topY;
   const centerOffset = (h * h - BULGE * BULGE) / (2 * BULGE);
   const arcRadius = Math.sqrt(centerOffset * centerOffset + h * h);
@@ -111,12 +148,12 @@ export function TestimonialsSection() {
     <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
 
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <Text variant="h2" color="dark" className="text-3xl sm:text-4xl">
           Verified Reviews from <span className="text-sky-600">Real Travelers</span>
-        </h2>
-        <p className="text-sm text-slate-600 font-normal">
+        </Text>
+        <Text variant="body" color="muted">
           Only guests who booked and completed their stay through Higa Lux can submit ratings.
-        </p>
+        </Text>
       </div>
 
       <div className="relative">
@@ -130,13 +167,13 @@ export function TestimonialsSection() {
           <div className="absolute -top-28 -left-28 w-72 h-72 bg-sky-600/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Avatar Rail */}
-          <div className="relative px-6 sm:px-8 py-10 lg:py-14 border-b lg:border-b-0 border-slate-100">
-            <div className="relative" style={{ height: railHeight }}>
+          <div className="relative px-6 sm:px-8 py-10 lg:py-14 border-b lg:border-b-0 border-slate-100 flex items-center justify-center">
+            <div className="relative w-full overflow-hidden" style={{ height: railHeight }}>
               {/* Semicircular bow connecting line — lives in the same coordinate
                   space as the avatar rows below so the curve and the avatar
                   centers share one exact origin. */}
               <svg
-                className="absolute left-0 top-0 pointer-events-none"
+                className="absolute left-0 top-0 pointer-events-none z-0"
                 width={railWidth}
                 height={railHeight}
                 viewBox={`0 0 ${railWidth} ${railHeight}`}
@@ -150,26 +187,36 @@ export function TestimonialsSection() {
               </svg>
 
               {reviews.map((review, index) => {
-                const slot = (index - active + 1 + n) % n;
+                const slot = getSlot(index, active, n);
                 const isActive = slot === 1;
+                const isVisible = slot >= 0 && slot <= 2;
                 const avatarX = isActive ? bulgeX : restX;
                 const bulge = avatarX - AVATAR_SIZE / 2;
+
                 return (
                   <button
-                    key={review.author}
+                    key={review.id}
                     type="button"
                     onClick={() => handleSelect(index)}
-                    className="absolute left-0 w-full flex items-center gap-3 text-left transition-[top] duration-700 ease-in-out"
+                    tabIndex={isVisible ? 0 : -1}
+                    className={`absolute left-0 w-full flex items-center gap-3 text-left transition-all duration-700 ease-in-out ${
+                      isVisible ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'
+                    }`}
                     style={{ top: slot * ROW_HEIGHT, height: ROW_HEIGHT }}
                     aria-pressed={isActive}
+                    aria-hidden={!isVisible}
                   >
                     <div
-                      className={`relative z-10 shrink-0 rounded-full overflow-hidden border-2 transition-all duration-700 ease-in-out ${
+                      className={`relative z-10 shrink-0 rounded-full overflow-hidden border-2 bg-sky-100 flex items-center justify-center transition-all duration-700 ease-in-out ${
                         isActive ? 'border-sky-500 shadow-lg shadow-sky-500/20' : 'border-slate-200 opacity-60'
                       }`}
                       style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, marginLeft: bulge }}
                     >
-                      <Image src={review.avatar} alt={review.author} fill className="object-cover" sizes="64px" />
+                      {review.avatar ? (
+                        <Image src={review.avatar} alt="" fill className="object-cover" sizes="64px" />
+                      ) : (
+                        <User className="w-6 h-6 text-sky-700" />
+                      )}
                     </div>
                     <div className="relative z-10 min-w-0 flex-1 transition-all duration-700 ease-in-out">
                       <div
@@ -182,7 +229,7 @@ export function TestimonialsSection() {
                       <div className={`flex items-center gap-1.5 mt-1 ${isActive ? 'text-slate-600' : 'text-slate-400'}`}>
                         <Star className={`shrink-0 transition-all duration-300 ${isActive ? 'w-4 h-4 fill-sky-500 text-sky-500' : 'w-3 h-3 fill-slate-300 text-slate-300'}`} />
                         <span className={`font-semibold whitespace-nowrap transition-all duration-300 ${isActive ? 'text-sm' : 'text-xs'}`}>{review.rating.toFixed(1)}</span>
-                        <span className="text-[11px] whitespace-nowrap">on {review.date}</span>
+                        <span className="text-[11px] whitespace-nowrap">on {formatMonth(review.createdAt)}</span>
                       </div>
                     </div>
                   </button>
@@ -199,9 +246,9 @@ export function TestimonialsSection() {
 
             {/* Venue & Verified Tag */}
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-bold text-slate-900">
+              <Link href={`/listings/${current.venueSlug}`} className="text-xs font-bold text-slate-900 hover:text-sky-700 transition-colors">
                 {current.venue}
-              </span>
+              </Link>
               <div className="flex items-center gap-1 text-[10px] font-bold text-sky-700">
                 <CheckCircle2 className="w-3 h-3 text-sky-600" />
                 <span>Verified Stay</span>
@@ -216,11 +263,11 @@ export function TestimonialsSection() {
             {/* Quote */}
             <div className="space-y-3">
               <h5 className="text-sm sm:text-base font-bold text-slate-900">{current.title}</h5>
-              <p className="font-serif italic text-lg sm:text-xl text-slate-700 leading-relaxed">
+              <p className="italic text-lg sm:text-xl text-slate-700 leading-relaxed">
                 &ldquo;{current.comment}&rdquo;
               </p>
               <p className="text-xs text-slate-500 font-medium pt-1">
-                &mdash; {current.author}, {current.origin}
+                &mdash; {current.author}, verified stay in {formatMonth(current.createdAt)}
               </p>
             </div>
 
@@ -236,7 +283,7 @@ export function TestimonialsSection() {
               <div className="p-3.5 rounded-xl bg-sky-50/70 border-l-4 border-sky-600 text-xs space-y-1 max-w-lg">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-900">
                   <MessageSquare className="w-3 h-3 text-sky-600" />
-                  <span>{current.replyAuthor}</span>
+                  <span>Response from {current.venue}</span>
                 </div>
                 <p className="text-[11px] text-slate-700 leading-relaxed font-normal">
                   {current.partnerReply}

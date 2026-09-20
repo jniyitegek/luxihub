@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
+import { forbidden, handleRouteError, notFound, requireRole } from '@/lib/api';
 
 const PLAN_CATALOG: Record<string, { name: string; monthlyPrice: number; annualPrice: number; perks: string[] }> = {
   STANDARD: {
@@ -26,10 +28,7 @@ const PLAN_CATALOG: Record<string, { name: string; monthlyPrice: number; annualP
 // Fetch the current subscription for the caller's business
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
@@ -38,12 +37,10 @@ export async function GET(req: Request) {
       ? await prisma.business.findUnique({ where: { id: businessId } })
       : await prisma.business.findFirst({ where: { ownerId: user.id } });
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    if (!business) throw notFound('Business not found');
 
     if (user.role !== 'ADMIN' && business.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
     const subscription = await prisma.partnerSubscription.findFirst({
@@ -59,18 +56,15 @@ export async function GET(req: Request) {
         : null,
       catalog: PLAN_CATALOG,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch subscription' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'partner/subscriptions');
   }
 }
 
 // Upgrade/downgrade the caller's business subscription tier
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized. Partner or Admin role required.' }, { status: 403 });
-    }
+    const user = await requireRole('SERVICE_OWNER', 'ADMIN');
 
     const body = await req.json();
     const { businessId, planTier, billingCycle = 'MONTHLY' } = body;
@@ -86,12 +80,10 @@ export async function POST(req: Request) {
       ? await prisma.business.findUnique({ where: { id: businessId } })
       : await prisma.business.findFirst({ where: { ownerId: user.id } });
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    if (!business) throw notFound('Business not found');
 
     if (user.role !== 'ADMIN' && business.ownerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden. You do not own this listing.' }, { status: 403 });
+      throw forbidden('You do not own this listing');
     }
 
     const plan = PLAN_CATALOG[planTier];
@@ -132,7 +124,7 @@ export async function POST(req: Request) {
       subscriptionTier: updatedBusiness.subscriptionTier,
       message: `Successfully updated partner membership tier to ${plan.name}!`,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update subscription' }, { status: 500 });
+  } catch (error) {
+    return handleRouteError(error, 'partner/subscriptions');
   }
 }

@@ -3,8 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  SERVICE_OWNER
+  ADMIN
+}
+
+enum VerificationSource {
+  PUBLIC_REVIEW
+  BUSINESS_REGISTRATION
 }
 
 model User {
@@ -12,7 +24,7 @@ model User {
   email        String    @unique
   passwordHash String
   name         String
-  role         String    @default("CUSTOMER") // CUSTOMER, PARTNER, ADMIN
+  role         Role      @default(CUSTOMER)
   phone        String?
   avatarUrl    String?
   loyaltyPoints Int      @default(0)
@@ -28,34 +40,40 @@ model User {
 }
 
 model Business {
-  id                 String    @id @default(cuid())
-  ownerId            String
-  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id                 String              @id @default(cuid())
+  ownerId            String?
+  owner              User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   name               String
-  slug               String    @unique
-  type               String    // HOTEL, RESTAURANT, TOUR
-  location           String    // Kigali, Musanze, Rubavu, Nyungwe, Akagera
+  slug               String              @unique
+  type               String              // HOTEL, RESTAURANT, TOUR
+  location           String              // Kigali, Musanze, Rubavu, Nyungwe, Akagera
   address            String
   description        String
   shortTagline       String?
-  amenities          String    @default("[]") // JSON string array
-  images             String    @default("[]") // JSON string array
-  pricingTier        String    @default("$$$") // $$, $$$, $$$$
-  basePrice          Float     @default(150000)
-  currency           String    @default("RWF")
-  status             String    @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
-  certificationBadge String    @default("LUXE_VERIFIED") // LUXE_VERIFIED, GOLD_STANDARD, ECO_SUSTAINABLE, NONE
-  ratingAvg          Float     @default(4.9)
-  reviewCount        Int       @default(0)
-  isFeatured         Boolean   @default(false)
-  subscriptionTier   String    @default("STANDARD") // STANDARD, CERTIFIED, ELITE
+  amenities          String              @default("[]") // JSON string array
+  images             String              @default("[]") // JSON string array
+  pricingTier        String              @default("$$$") // $$, $$$, $$$$
+  basePrice          Float               @default(150000)
+  currency           String              @default("RWF")
+  status             String              @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
+  certificationBadge String              @default("LUXE_VERIFIED") // LUXE_VERIFIED, GOLD_STANDARD, ECO_SUSTAINABLE, NONE
+  ratingAvg          Float               @default(0)
+  reviewCount        Int                 @default(0)
+  isFeatured         Boolean             @default(false)
+  isVerified         Boolean             @default(false)
+  verificationSource VerificationSource?
+  needsAdminAudit    Boolean             @default(false)
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  subscriptionTier   String              @default("STANDARD") // STANDARD, CERTIFIED, ELITE
   featuredUntil      DateTime? // Advanced Visibility Tools: promoted placement expiry
   phone              String?
   email              String?
   website            String?
-  responseRate       Int       @default(98) // Percentage
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  logoUrl            String?
+  responseRate       Int                 @default(0) // Percentage of guest enquiries answered
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   offerings          ServiceOffering[]
   bookings           Booking[]
@@ -63,25 +81,40 @@ model Business {
   audits             QAAudit[]
   subscriptions      PartnerSubscription[]
   enrollments        TrainingEnrollment[]
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([location])
+  @@index([status])
+  @@index([isVerified])
+  @@index([needsAdminAudit])
+  @@index([isFeatured, ratingAvg])
 }
 
 model ServiceOffering {
   id           String    @id @default(cuid())
   businessId   String
   business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category     String    @default("STAYS") // STAYS, EXPERIENCES, DINING, or custom category name
+  subType      String?   // e.g., Suite, Villa, Tour, À la carte
   title        String
   description  String
   capacity     Int       @default(2)
   price        Float
   currency     String    @default("RWF")
-  unit         String    @default("per_night") // per_night, per_person, per_table, per_tour
+  unit         String    @default("per_night") // per_night, per_person, per_table, per_tour, etc.
   duration     String?
+  coverImage   String?
   images       String    @default("[]") // JSON string array
   inclusions   String    @default("[]") // JSON string array
+  attributes   String    @default("{}") // Flexible JSON object for category-specific & custom key/value pairs
   isAvailable  Boolean   @default(true)
   createdAt    DateTime  @default(now())
 
   bookings     Booking[]
+
+  @@index([businessId])
+  @@index([category])
 }
 
 model Booking {
@@ -112,6 +145,12 @@ model Booking {
 
   payment           Payment?
   review            Review?
+
+  @@index([customerId])
+  @@index([businessId])
+  @@index([serviceOfferingId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Payment {
@@ -119,14 +158,19 @@ model Payment {
   bookingId       String    @unique
   booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   transactionRef  String    @unique
+  providerRef     String?   // Reference returned by the upstream gateway
   provider        String    // MTN_MOMO, AIRTEL_MONEY, CARD, FLUTTERWAVE
   amount          Float
   currency        String    @default("RWF")
-  status          String    @default("SUCCESS") // INITIATED, SUCCESS, FAILED
+  status          String    @default("INITIATED") // INITIATED, PENDING, SUCCESS, FAILED
   payerPhone      String?
   channelResponse String?
-  paidAt          DateTime? @default(now())
+  paidAt          DateTime?
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt @default(now())
+
+  @@index([status])
+  @@index([providerRef])
 }
 
 model Review {
@@ -148,6 +192,10 @@ model Review {
   partnerRepliedAt  DateTime?
   isVerified        Boolean   @default(true)
   createdAt         DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([createdAt])
 }
 
 model QAAudit {
@@ -161,6 +209,8 @@ model QAAudit {
   inspectionItems  String    @default("[]") // JSON string of checked criteria
   auditDate        DateTime  @default(now())
   createdAt        DateTime  @default(now())
+
+  @@index([businessId, auditDate])
 }
 
 model TrainingCourse {
@@ -196,6 +246,9 @@ model TrainingEnrollment {
   completedAt       DateTime?
   certificateNumber String?
   createdAt         DateTime       @default(now())
+
+  @@index([courseId])
+  @@index([businessId])
 }
 
 model SupportTicket {
@@ -211,6 +264,9 @@ model SupportTicket {
   responses   String    @default("[]") // JSON array of response messages
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model LoyaltyTransaction {
@@ -222,13 +278,15 @@ model LoyaltyTransaction {
   type        String    // EARNED, REDEEMED
   description String
   createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model PartnerSubscription {
   id              String    @id @default(cuid())
   businessId      String
   business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  planTier        String    // STANDARD, LUXE_CERTIFIED, ELITE_AMBASSADOR
+  planTier        String    // STANDARD, CERTIFIED, ELITE
   billingCycle    String    @default("MONTHLY") // MONTHLY, ANNUAL
   price           Float
   currency        String    @default("RWF")
@@ -236,19 +294,49 @@ model PartnerSubscription {
   nextBillingDate DateTime
   perks           String    @default("[]") // JSON string array
   createdAt       DateTime  @default(now())
+
+  @@index([businessId, status])
 }
 
 model ServiceRating {
-  id           String   @id @default(cuid())
-  serviceId    String   // service_id
-  serviceName  String
-  rating       Int
-  comment      String?
-  reviewerName String   @default("Anonymous") // reviewer_name
-  ipHash       String   // ip_hash
-  createdAt    DateTime @default(now()) // created_at
+  id             String   @id @default(cuid())
+  serviceId      String   // service_id
+  serviceName    String
+  serviceType    String   @default("OTHER") // STAYS, EXPERIENCES, DINING, OTHER
+  isUnregistered Boolean  @default(false)
+  rating         Int
+  comment        String?
+  reviewerName   String   @default("Anonymous") // reviewer_name
+  ipHash         String   // ip_hash
+  createdAt      DateTime @default(now()) // created_at
 
   @@index([serviceId])
+  @@index([serviceType])
+  @@index([isUnregistered])
   @@index([ipHash])
 }
 
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  source         String    @default("FOOTER") // FOOTER, CHECKOUT, CAMPAIGN
+  status         String    @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED
+  confirmedAt    DateTime?
+  unsubscribedAt DateTime?
+  ipHash         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String   // MTN_MOMO, FLUTTERWAVE
+  externalId  String
+  payload     String
+  processedAt DateTime @default(now())
+
+  @@unique([provider, externalId])
+}

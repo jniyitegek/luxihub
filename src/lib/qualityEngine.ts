@@ -67,8 +67,13 @@ export function evaluateBusinessQuality(params: {
     serviceAvg,
     hospitalityAvg,
     responseRate,
-    auditChecklistScore = 94,
+    auditChecklistScore,
   } = params;
+
+  // A listing with no completed audit and no reviews scores zero rather than
+  // inheriting an optimistic placeholder — an unaudited property must never
+  // read as "nearly certified".
+  const auditScore = auditChecklistScore ?? 0;
 
   // Normalized review score (out of 100)
   const reviewScore = (ratingAvg / 5) * 100;
@@ -79,7 +84,7 @@ export function evaluateBusinessQuality(params: {
   // Weighted overall calculation:
   // 40% In-person QA Audit, 35% Customer Reviews, 15% Response Rate, 10% Service Consistency
   const overallScore = Math.round(
-    auditChecklistScore * 0.40 +
+    auditScore * 0.40 +
     reviewScore * 0.35 +
     responseRate * 0.15 +
     ((cleanlinessScore + hospitalityScore + serviceScore) / 3) * 0.10
@@ -111,8 +116,8 @@ export function evaluateBusinessQuality(params: {
     categoryBreakdown: {
       hospitality: Math.round(hospitalityScore),
       cleanliness: Math.round(cleanlinessScore),
-      sustainability: Math.round(auditChecklistScore * 0.96),
-      facilities: Math.round((serviceScore + auditChecklistScore) / 2),
+      sustainability: Math.round(auditScore * 0.96),
+      facilities: Math.round((serviceScore + auditScore) / 2),
     },
     reviewSentimentScore: Math.round(reviewScore),
     responseRateScore: responseRate,
